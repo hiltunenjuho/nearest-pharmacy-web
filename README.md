@@ -1,71 +1,51 @@
 # Pharmacy Finder Web
 
-A personal nearest-pharmacy experience built and branded by Juho Hiltunen.
+A global nearest-pharmacy finder built by Juho Hiltunen with React, TypeScript, and Vite.
 
-## What it does
+## Features
 
-- Requests the user's location and searches Google Places Nearby Search for pharmacies
-- Displays up to 10 results, sorted by straight-line distance
-- Shows returned address, Google Places current opening hours (today’s hours where available), phone number, and Google Maps links
-- Uses no hardcoded pharmacy directory or fabricated business details
+- Uses browser geolocation to search around the user's current position anywhere in the world
+- Fetches up to 10 pharmacies from OpenStreetMap via public Overpass API instances
+- Searches within a maximum radius of 50 km and returns up to the 10 closest results
+- Sorts results by straight-line distance and displays mapped addresses, contact details, and today's hours when available
+- Provides map directions and OpenStreetMap links
+- Includes System, Light, and Dark appearance options; System follows the operating-system preference
+- Includes an English/Finnish language toggle, initially using the browser's system language
+- Provides an in-app information panel describing the search, data quality, and location privacy
 
-## Brand direction
+The app requires no Google Maps API key, account, or billing configuration. Overpass instances are public community services and do not guarantee uptime. OpenStreetMap coverage and mapped details vary by area; fewer than 10 results may be returned. Opening-hours information is community-maintained and may omit holidays or be out of date. Confirm details before travelling.
 
-- Dark neutral base: `#1F1F1F`
-- Accent: pharmacy green (`#5AD38A`)
-- App title: `Pharmacy Finder | Juho Hiltunen`
-- Favicon: minimalist green medical cross
+The app sends the coordinates needed to perform the pharmacy search to an Overpass service. It does not persist location or results. Pharmacy data © [OpenStreetMap contributors](https://www.openstreetmap.org/copyright), available under the [ODbL](https://opendatacommons.org/licenses/odbl/).
 
 ## Run locally
 
 ```bash
 npm install
-```
-
-Create `.env.local` using `.env.example` and set a Google Maps Platform API key:
-
-```env
-VITE_GOOGLE_MAPS_API_KEY=your_restricted_key
-```
-
-Enable Maps JavaScript API and Places API (New) in a Google Cloud project with billing. Restrict the browser key to those APIs and the exact local/demo HTTP referrers; browser keys are visible to users and must never be treated as secrets.
-
-Then start the app:
-
-```bash
 npm run dev
 ```
 
-## Build
+No API key or `.env` file is required.
+
+## Build and test
 
 ```bash
 npm run build
-```
-
-## Test
-
-```bash
 npm test
 ```
 
 ## Demo
 
-https://hiltunenjuho.github.io/nearest-pharmacy-web/
+[Open Pharmacy Finder](https://hiltunenjuho.github.io/nearest-pharmacy-web/)
 
-## License
+## License and author
 
-This project is released under the [MIT License](./LICENSE).
-The license applies to this project's code; Google Maps content is subject to Google Maps Platform terms.
-
-## Author
+Application code is available under the [MIT License](./LICENSE); OpenStreetMap data remains under the ODbL.
 
 - [Portfolio](https://hiltunenjuho.github.io/)
 - [GitHub](https://github.com/hiltunenjuho)
 - [LinkedIn](https://www.linkedin.com/in/hiltunenjuho/)
 - [Web repository](https://github.com/hiltunenjuho/nearest-pharmacy-web)
 
-## GitHub Pages configuration
+## GitHub Pages
 
-Add a repository Actions secret named `GOOGLE_MAPS_API_KEY`. The deploy workflow injects it at build time as `VITE_GOOGLE_MAPS_API_KEY`. Restrict this key to Maps JavaScript API and Places API (New), and to the exact GitHub Pages and local development referrers. Until the secret and Google Cloud API setup are in place, the app displays a configuration error instead of fake fallback data.
-
-Google Maps Platform usage can incur charges. The search requests only the fields used by the app; review current Google Maps Platform pricing and quotas before enabling public use. Results are fetched on demand and are not persisted.
+The included Actions workflow builds and deploys the static app without secrets or provider-specific configuration.

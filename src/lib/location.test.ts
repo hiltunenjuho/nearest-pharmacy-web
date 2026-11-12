@@ -8,7 +8,7 @@ function mockPharmacy(id: string, area: string, lat: number, lng: number): MockP
 }
 
 describe('nearby pharmacy ranking', () => {
-  it('sorts nearest places first for Helsinki, Espoo, Vantaa, and Kauniainen mock locations', () => {
+  it('sorts nearest places first for Helsinki-area mock locations', () => {
     const pharmacies = [
       mockPharmacy('helsinki', 'Helsinki', 60.1699, 24.9384),
       mockPharmacy('espoo', 'Espoo', 60.205, 24.6564),
@@ -38,5 +38,17 @@ describe('nearby pharmacy ranking', () => {
     const distance = getDistanceKm({ lat: 60.1699, lng: 24.9384 }, { lat: 60.1631, lng: 24.9399 });
     expect(distance).toBeGreaterThan(0.3);
     expect(distance).toBeLessThan(2);
+  });
+
+  it('uses the same distance sorting globally for New York, Tokyo, and Sydney', () => {
+    const pharmacies = [
+      mockPharmacy('new-york', 'New York', 40.7128, -74.006),
+      mockPharmacy('tokyo', 'Tokyo', 35.6762, 139.6503),
+      mockPharmacy('sydney', 'Sydney', -33.8688, 151.2093),
+    ];
+
+    expect(sortByDistance(pharmacies, { lat: 35.68, lng: 139.65 })[0].area).toBe('Tokyo');
+    expect(sortByDistance(pharmacies, { lat: -33.87, lng: 151.21 })[0].area).toBe('Sydney');
+    expect(sortByDistance(pharmacies, { lat: 40.71, lng: -74.01 })[0].area).toBe('New York');
   });
 });

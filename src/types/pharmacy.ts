@@ -4,7 +4,7 @@ export type Pharmacy = {
   address: string;
   lat: number;
   lng: number;
-  currentWeekHours: string[];
+  openingHours?: string;
   phoneNumber?: string;
-  mapsUrl?: string;
+  osmUrl: string;
 };
