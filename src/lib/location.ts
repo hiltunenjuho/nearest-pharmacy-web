@@ -26,6 +26,10 @@ export function sortByDistance<T extends Coordinates>(items: T[], origin: Coordi
   );
 }
 
+export function getNearest<T extends Coordinates>(items: T[], origin: Coordinates, limit = 10) {
+  return sortByDistance(items, origin).slice(0, limit);
+}
+
 export function formatDistance(distanceKm: number) {
   if (distanceKm < 1) {
     return `${Math.round(distanceKm * 1000)} m`;
