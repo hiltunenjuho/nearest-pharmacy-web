@@ -1,35 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { PHARMACIES } from './data/pharmacies';
-
-type Coordinates = {
-  lat: number;
-  lng: number;
-};
-
-function toRadians(value: number) {
-  return (value * Math.PI) / 180;
-}
-
-function getDistanceKm(from: Coordinates, to: Coordinates) {
-  const earthRadiusKm = 6371;
-  const dLat = toRadians(to.lat - from.lat);
-  const dLng = toRadians(to.lng - from.lng);
-
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(toRadians(from.lat)) * Math.cos(toRadians(to.lat)) * Math.sin(dLng / 2) ** 2;
-
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return earthRadiusKm * c;
-}
-
-function formatDistance(distanceKm: number) {
-  if (distanceKm < 1) {
-    return `${Math.round(distanceKm * 1000)} m`;
-  }
-
-  return `${distanceKm.toFixed(1)} km`;
-}
+import { formatDistance, getDistanceKm, type Coordinates } from './lib/location';
 
 function App() {
   const [userLocation, setUserLocation] = useState<Coordinates | null>(null);
@@ -75,7 +46,7 @@ function App() {
         setIsLocating(false);
       },
       () => {
-        setLocationError('Location access was denied. Showing the best available matches in Helsinki.');
+        setLocationError('Location access was denied. Showing the nearest options across the Helsinki Metropolitan Area.');
         setIsLocating(false);
       },
       { enableHighAccuracy: true, timeout: 8000 },
@@ -89,13 +60,15 @@ function App() {
     <div className="app-shell">
       <header className="topbar">
         <div>
-          <div className="eyebrow">Treat Health</div>
-          <h1>Closest pharmacy</h1>
+          <div className="eyebrow">Juho Hiltunen</div>
+          <h1>Pharmacy Finder</h1>
         </div>
         <button className="primary-button" onClick={handleLocate} disabled={isLocating}>
           {isLocating ? 'Finding your location...' : 'Use my location'}
         </button>
       </header>
+
+      <p className="subtitle">Closest trusted pharmacy options across Helsinki, Espoo, Vantaa and Kauniainen.</p>
 
       {locationError ? <p className="notice">{locationError}</p> : null}
 
@@ -127,7 +100,9 @@ function App() {
                     </div>
                     {distance !== null ? <span>{formatDistance(distance)}</span> : null}
                   </div>
-                  <small>{pharmacy.hours}</small>
+                  <small>
+                    {pharmacy.city} · {pharmacy.hours}
+                  </small>
                 </button>
               );
             })}
@@ -143,7 +118,9 @@ function App() {
               </div>
 
               <h2>{selected.name}</h2>
-              <p className="address">{selected.address}</p>
+              <p className="address">
+                {selected.address} · {selected.city}
+              </p>
 
               <div className="meta-grid">
                 <div>
@@ -156,10 +133,10 @@ function App() {
                 </div>
               </div>
 
-              <div className="services-wrap">
-                {selected.services.map((service) => (
-                  <span key={service} className="service-tag">
-                    {service}
+              <div className="facts-wrap">
+                {selected.facts.map((fact) => (
+                  <span key={fact} className="fact-tag">
+                    {fact}
                   </span>
                 ))}
               </div>

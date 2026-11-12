@@ -1,19 +1,20 @@
-# Treat Pharmacy Web
+# Pharmacy Finder Web
 
-A lightweight nearest-pharmacy finder for Helsinki, optimized for a clean MVP with minimal dependencies.
+A personal nearest-pharmacy experience built and branded by Juho Hiltunen.
 
 ## What it does
 
-- Requests browser geolocation
-- Ranks pharmacies by nearest distance
-- Surfaces a polished details panel for the selected pharmacy
-- Uses a local static dataset to keep the app fast and inexpensive to run
+- Finds the closest pharmacy using browser geolocation
+- Covers the Helsinki Metropolitan Area, including Helsinki, Espoo, Vantaa, and Kauniainen
+- Surfaces a clean detail panel with hours, travel time, and directions
+- Keeps the experience lightweight, fast, and easy to extend without a backend
 
-## Why this fits the budget
+## Brand direction
 
-- Single-page React app with Vite
-- No backend or expensive services needed for the initial version
-- Local static data keeps runtime costs near zero
+- Dark neutral base: `#1F1F1F`
+- Accent: pharmacy green (`#5AD38A`)
+- App title: `Pharmacy Finder | Juho Hiltunen`
+- Favicon: minimalist green medical cross
 
 ## Run locally
 
@@ -27,3 +28,13 @@ npm run dev
 ```bash
 npm run build
 ```
+
+## Test
+
+```bash
+npm test
+```
+
+## Demo
+
+https://hiltunenjuho.github.io/nearest-pharmacy-web/
