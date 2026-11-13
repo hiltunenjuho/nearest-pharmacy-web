@@ -27,6 +27,15 @@ describe('getTodayHours', () => {
       new Date('2025-01-05T22:00:00.000Z'),
     )).toBe('9.00–17.00');
   });
+
+  it('uses 24-hour time for Finnish and keeps AM/PM for English', () => {
+    const descriptions = ['maanantai: 9:00 AM–5:30 PM'];
+    const monday = new Date('2025-01-06T10:00:00.000Z');
+
+    expect(getTodayHours(descriptions, 0, 'fi', monday)).toBe('09.00–17.30');
+    expect(getTodayHours(['monday: 9:00 AM–5:30 PM'], 0, 'en', monday)).toBe('9:00 AM–5:30 PM');
+    expect(getTodayHours(['maanantai: 12:00 AM–12:00 PM'], 0, 'fi', monday)).toBe('00.00–12.00');
+  });
 });
 
 describe('parseSearchInput', () => {
@@ -61,7 +70,7 @@ describe('Cloudflare Places Worker', () => {
         currentOpeningHours: {
           weekdayDescriptions: [
             'sunnuntai: Suljettu',
-            'maanantai: 9.00–17.00',
+            'maanantai: 9:00 AM–5:00 PM',
             'tiistai: 9.00–17.00',
             'keskiviikko: 9.00–17.00',
             'torstai: 9.00–17.00',
@@ -91,9 +100,10 @@ describe('Cloudflare Places Worker', () => {
     expect(response.headers.get('Access-Control-Allow-Origin')).toBe('https://hiltunenjuho.github.io');
     expect(body.pharmacies[0]).toMatchObject({
       id: 'place-123',
-      todayHours: '9.00–17.00',
-      mapsUrl: 'https://www.google.com/maps/search/?api=1&query_place_id=place-123',
+      todayHours: '09.00–17.00',
+      mapsUrl: 'https://www.google.com/maps/search/?api=1&query=Apteekki%2C+Katu+1%2C+Helsinki&query_place_id=place-123',
     });
+    expect(body.pharmacies[0].openingHours).toContain('maanantai: 09.00–17.00');
     expect(googleUrl).toBe('https://places.googleapis.com/v1/places:searchNearby');
     expect(googleOptions.headers).toMatchObject({
       'X-Goog-Api-Key': 'test-demo-key',

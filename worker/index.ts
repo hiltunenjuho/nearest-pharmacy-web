@@ -31,6 +31,19 @@ export type Env = {
   ALLOWED_ORIGINS: string;
 };
 
+function formatHoursDescription(description: string, language: Language) {
+  if (language !== 'fi') return description;
+
+  return description.replace(
+    /\b(1[0-2]|0?[1-9])(?::([0-5]\d))?\s*([ap])\.?m\.?/gi,
+    (_match, rawHour: string, minutes: string | undefined, period: string) => {
+      let hour = Number(rawHour) % 12;
+      if (period.toLowerCase() === 'p') hour += 12;
+      return `${String(hour).padStart(2, '0')}.${minutes ?? '00'}`;
+    },
+  );
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
@@ -106,7 +119,7 @@ export function getTodayHours(
     .toLocaleLowerCase(locale);
   const prefix = `${weekday}:`;
   const description = descriptions.find((entry) => entry.toLocaleLowerCase(locale).startsWith(prefix));
-  return description ? description.slice(prefix.length).trim() || null : null;
+  return description ? formatHoursDescription(description.slice(prefix.length).trim(), language) || null : null;
 }
 
 function toPharmacy(value: unknown, language: Language) {
@@ -130,15 +143,22 @@ function toPharmacy(value: unknown, language: Language) {
 
   const descriptions = currentOpeningHours?.weekdayDescriptions;
   const openingHours = Array.isArray(descriptions)
-    ? descriptions.filter((entry): entry is string => typeof entry === 'string')
+    ? descriptions
+      .filter((entry): entry is string => typeof entry === 'string')
+      .map((entry) => formatHoursDescription(entry, language))
     : [];
   const utcOffsetMinutes = value.utcOffsetMinutes;
   const phoneNumber = value.nationalPhoneNumber;
   const address = value.formattedAddress;
+  const name = typeof displayName?.text === 'string' ? displayName.text.trim() || 'Pharmacy' : 'Pharmacy';
+  const mapsUrl = new URL('https://www.google.com/maps/search/');
+  mapsUrl.searchParams.set('api', '1');
+  mapsUrl.searchParams.set('query', [name, typeof address === 'string' ? address : ''].filter(Boolean).join(', '));
+  mapsUrl.searchParams.set('query_place_id', id);
 
   return {
     id,
-    name: typeof displayName?.text === 'string' ? displayName.text.trim() || 'Pharmacy' : 'Pharmacy',
+    name,
     address: typeof address === 'string' ? address : '',
     lat,
     lng,
@@ -149,7 +169,7 @@ function toPharmacy(value: unknown, language: Language) {
     ),
     openingHours,
     phoneNumber: typeof phoneNumber === 'string' ? phoneNumber : undefined,
-    mapsUrl: `https://www.google.com/maps/search/?api=1&query_place_id=${encodeURIComponent(id)}`,
+    mapsUrl: mapsUrl.toString(),
   };
 }
 

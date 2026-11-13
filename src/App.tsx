@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { searchNearbyPharmacies } from './lib/pharmacySearch';
 import { formatDistance, getDistanceKm, type Coordinates } from './lib/location';
 import { getDirectionsUrl } from './lib/mapsUrls';
@@ -14,6 +14,9 @@ const messages = {
     languageControl: 'Language',
     themeControl: 'Toggle light or dark theme',
     switchLanguage: 'Switch language to Finnish',
+    menuControl: 'Open quick links',
+    closeMenu: 'Close quick links',
+    menuLabel: 'Quick links',
     openInfo: 'About this app',
     close: 'Close',
     findNearby: 'Find nearby pharmacies',
@@ -23,7 +26,6 @@ const messages = {
     resultCount: (count: number) => `${count} of up to 10`,
     findLocation: 'Use your location to search Google Maps for nearby pharmacies.',
     noResults: 'No pharmacies were found within 50 km.',
-    noSelection: 'Your nearest pharmacy results will appear here.',
     addressMissing: 'Address not provided',
     unnamedPharmacy: 'Pharmacy',
     hoursUnavailable: 'Hours unavailable',
@@ -36,9 +38,12 @@ const messages = {
     viewOnGoogle: 'View on Google Maps',
     callPharmacy: 'Call pharmacy',
     dataAttribution: 'Pharmacy information provided by',
-    footerBuilt: (year: number) => `Built by Juho Hiltunen · © ${year}`,
+    footerBuilt: (year: number) => `Juho Hiltunen · © ${year}`,
     footerPrivacy: 'Your coordinates are sent through Cloudflare to Google Maps for the search. The app does not save them.',
     linksLabel: 'Juho Hiltunen links',
+    webRepository: 'Web app source',
+    iosRepository: 'iOS app source',
+    contact: 'Contact',
     infoTitle: 'About Pharmacy Finder',
     infoIntro: 'Pharmacy Finder helps you find nearby pharmacies wherever you are.',
     infoPortfolio: 'This is an independent software developer portfolio project and is not affiliated with any organization.',
@@ -70,6 +75,9 @@ const messages = {
     languageControl: 'Kieli',
     themeControl: 'Vaihda vaalean ja tumman teeman välillä',
     switchLanguage: 'Vaihda kieleksi englanti',
+    menuControl: 'Avaa pikalinkit',
+    closeMenu: 'Sulje pikalinkit',
+    menuLabel: 'Pikalinkit',
     openInfo: 'Tietoa sovelluksesta',
     close: 'Sulje',
     findNearby: 'Etsi lähellä olevat apteekit',
@@ -79,7 +87,6 @@ const messages = {
     resultCount: (count: number) => `${count} / enintään 10`,
     findLocation: 'Paikanna itsesi hakeaksesi lähellä olevat apteekit Google Mapsista.',
     noResults: '50 km säteeltä ei löytynyt apteekkeja.',
-    noSelection: 'Lähimmät apteekit näkyvät tässä haun jälkeen.',
     addressMissing: 'Osoitetta ei ole saatavilla',
     unnamedPharmacy: 'Apteekki',
     hoursUnavailable: 'Aukioloaikoja ei ole saatavilla',
@@ -92,9 +99,12 @@ const messages = {
     viewOnGoogle: 'Näytä Google Mapsissa',
     callPharmacy: 'Soita apteekkiin',
     dataAttribution: 'Apteekkitiedot tarjoaa',
-    footerBuilt: (year: number) => `Tekijä Juho Hiltunen · © ${year}`,
+    footerBuilt: (year: number) => `Juho Hiltunen · © ${year}`,
     footerPrivacy: 'Koordinaatit välitetään Cloudflaren kautta Google Mapsiin hakua varten. Sovellus ei tallenna niitä.',
     linksLabel: 'Juho Hiltusen linkit',
+    webRepository: 'Web-sovelluksen lähdekoodi',
+    iosRepository: 'iOS-sovelluksen lähdekoodi',
+    contact: 'Yhteystiedot',
     infoTitle: 'Tietoa Pharmacy Finderistä',
     infoIntro: 'Pharmacy Finder auttaa löytämään lähellä olevia apteekkeja missä päin maailmaa tahansa.',
     infoPortfolio: 'Tämä on itsenäinen ohjelmistokehittäjän portfolio-projekti, eikä se ole sidoksissa mihinkään organisaatioon.',
@@ -167,10 +177,11 @@ function App() {
   const [pharmacies, setPharmacies] = useState<Pharmacy[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSearching, setIsSearching] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isInfoOpen, setIsInfoOpen] = useState(false);
   const [infoPage, setInfoPage] = useState<InfoPage>('about');
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const selected = pharmacies.find((item) => item.id === selectedId) ?? pharmacies[0];
+  const menuRef = useRef<HTMLDivElement>(null);
   const copy = messages[language];
   const effectiveTheme = themeOverride ?? (systemPrefersDark ? 'dark' : 'light');
 
@@ -202,6 +213,26 @@ function App() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isInfoOpen]);
+
+  useEffect(() => {
+    if (!isMenuOpen) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (event.target instanceof Node && !menuRef.current?.contains(event.target)) {
+        setIsMenuOpen(false);
+      }
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setIsMenuOpen(false);
+    };
+
+    document.addEventListener('pointerdown', handlePointerDown);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isMenuOpen]);
 
   const handleLocate = async () => {
     if (!navigator.geolocation) {
@@ -251,9 +282,6 @@ function App() {
     setThemeOverride(nextTheme);
   };
 
-  const heroDistance =
-    userLocation && selected ? getDistanceKm(userLocation, { lat: selected.lat, lng: selected.lng }) : null;
-
   return (
     <div className="app-shell">
       <header className="topbar">
@@ -264,59 +292,90 @@ function App() {
             <h1>Pharmacy Finder</h1>
           </div>
         </div>
-        <div className="header-actions">
+        <div className="header-menu" ref={menuRef}>
           <button
-            className="primary-button"
+            className="menu-toggle"
             type="button"
-            onClick={handleLocate}
-            disabled={isSearching}
+            aria-expanded={isMenuOpen}
+            aria-controls="quick-links"
+            aria-label={isMenuOpen ? copy.closeMenu : copy.menuControl}
+            onClick={() => setIsMenuOpen((isOpen) => !isOpen)}
           >
-            {isSearching ? copy.searching : copy.findNearby}
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 7h16M4 12h16M4 17h16" />
+            </svg>
           </button>
-          <div className="header-controls">
-            <button
-              className={`language-toggle ${language === 'fi' ? 'is-finnish' : ''}`}
-              type="button"
-              role="switch"
-              aria-checked={language === 'fi'}
-              aria-label={copy.languageControl}
-              onClick={() => setLanguage(language === 'en' ? 'fi' : 'en')}
-            >
-              <span>EN</span>
-              <span>FI</span>
-              <span className="toggle-thumb" aria-hidden="true" />
-            </button>
-            <button
-              className="utility-button info-button"
-              type="button"
-              onClick={() => {
-                setInfoPage('about');
-                setIsInfoOpen(true);
-              }}
-              aria-label={copy.openInfo}
-            >
-              <span aria-hidden="true">i</span>
-            </button>
-            <button
-              className={`theme-toggle ${effectiveTheme === 'dark' ? 'is-dark' : ''}`}
-              type="button"
-              role="switch"
-              aria-checked={effectiveTheme === 'dark'}
-              aria-label={copy.themeControl}
-              onClick={handleThemeToggle}
-            >
-              <svg className="theme-icon sun-icon" viewBox="0 0 24 24" aria-hidden="true">
-                <circle cx="12" cy="12" r="4" />
-                <path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42" />
-              </svg>
-              <svg className="theme-icon moon-icon" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M20.2 15.1A8.5 8.5 0 0 1 8.9 3.8 8.5 8.5 0 1 0 20.2 15.1Z" />
-              </svg>
-              <span className="toggle-thumb" aria-hidden="true" />
-            </button>
-          </div>
+          {isMenuOpen ? (
+            <nav className="quick-links" id="quick-links" aria-label={copy.menuLabel}>
+              <a href="https://hiltunenjuho.github.io/" target="_blank" rel="noopener noreferrer" onClick={() => setIsMenuOpen(false)}>
+                Juho Hiltunen
+              </a>
+              <a href="https://www.linkedin.com/in/hiltunenjuho/" target="_blank" rel="noopener noreferrer" onClick={() => setIsMenuOpen(false)}>
+                LinkedIn
+              </a>
+              <a href="https://github.com/hiltunenjuho" target="_blank" rel="noopener noreferrer" onClick={() => setIsMenuOpen(false)}>
+                GitHub
+              </a>
+              <a href="https://hiltunenjuho.github.io/#contact" target="_blank" rel="noopener noreferrer" onClick={() => setIsMenuOpen(false)}>
+                {copy.contact}
+              </a>
+            </nav>
+          ) : null}
         </div>
       </header>
+
+      <div className="utility-row">
+        <button
+          className="utility-button info-button"
+          type="button"
+          onClick={() => {
+            setInfoPage('about');
+            setIsInfoOpen(true);
+          }}
+          aria-label={copy.openInfo}
+        >
+          <span aria-hidden="true">i</span>
+        </button>
+        <button
+          className="primary-button"
+          type="button"
+          onClick={handleLocate}
+          disabled={isSearching}
+        >
+          {isSearching ? copy.searching : copy.findNearby}
+        </button>
+        <div className="header-controls">
+          <button
+            className={`language-toggle ${language === 'fi' ? 'is-finnish' : ''}`}
+            type="button"
+            role="switch"
+            aria-checked={language === 'fi'}
+            aria-label={copy.languageControl}
+            onClick={() => setLanguage(language === 'en' ? 'fi' : 'en')}
+          >
+            <span>EN</span>
+            <span>FI</span>
+            <span className="toggle-thumb" aria-hidden="true" />
+          </button>
+          <button
+            className={`theme-toggle ${effectiveTheme === 'dark' ? 'is-dark' : ''}`}
+            type="button"
+            role="switch"
+            aria-checked={effectiveTheme === 'dark'}
+            aria-label={copy.themeControl}
+            onClick={handleThemeToggle}
+          >
+            <svg className="theme-icon sun-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="4" />
+              <path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42" />
+            </svg>
+            <svg className="theme-icon moon-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M20.2 15.1A8.5 8.5 0 0 1 8.9 3.8 8.5 8.5 0 1 0 20.2 15.1Z" />
+            </svg>
+            <span className="toggle-thumb" aria-hidden="true" />
+          </button>
+        </div>
+      </div>
 
       <p className="subtitle">{copy.subtitle}</p>
 
@@ -330,28 +389,94 @@ function App() {
           </div>
 
           <div className="pharmacy-list">
-            {pharmacies.map((pharmacy) => {
+            {pharmacies.map((pharmacy, index) => {
               const distance = userLocation
                 ? getDistanceKm(userLocation, { lat: pharmacy.lat, lng: pharmacy.lng })
                 : null;
-              const active = pharmacy.id === selected?.id;
+              const expanded = pharmacy.id === selectedId;
+              const detailsId = `pharmacy-details-${index}`;
 
               return (
-                <button
+                <article
                   key={pharmacy.id}
-                  type="button"
-                  className={`pharmacy-card ${active ? 'active' : ''}`}
-                  onClick={() => setSelectedId(pharmacy.id)}
+                  className={`pharmacy-card ${expanded ? 'active' : ''}`}
                 >
-                  <div className="card-row">
-                    <div>
-                      <strong>{pharmacy.name === 'Pharmacy' ? copy.unnamedPharmacy : pharmacy.name}</strong>
-                      <p>{pharmacy.address || copy.addressMissing}</p>
+                  <button
+                    className="pharmacy-card-toggle"
+                    type="button"
+                    aria-expanded={expanded}
+                    aria-controls={expanded ? detailsId : undefined}
+                    onClick={() => setSelectedId((current) => current === pharmacy.id ? null : pharmacy.id)}
+                  >
+                    <div className="card-row">
+                      <div className="card-summary">
+                        <strong>{pharmacy.name === 'Pharmacy' ? copy.unnamedPharmacy : pharmacy.name}</strong>
+                        <p>{pharmacy.address || copy.addressMissing}</p>
+                        <small>{formatTodayHours(pharmacy.todayHours)}</small>
+                      </div>
+                      {distance !== null ? <span className="pharmacy-distance">{formatDistance(distance)}</span> : null}
+                      <svg className="pharmacy-card-chevron" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="m6 9 6 6 6-6" />
+                      </svg>
                     </div>
-                    {distance !== null ? <span>{formatDistance(distance)}</span> : null}
-                  </div>
-                  <small>{formatTodayHours(pharmacy.todayHours)}</small>
-                </button>
+                  </button>
+                  {expanded ? (
+                    <div className="pharmacy-details" id={detailsId}>
+                      <div className="meta-grid">
+                        <div>
+                          <label>{copy.openToday}</label>
+                          <strong>{formatTodayHours(pharmacy.todayHours)}</strong>
+                        </div>
+                        <div>
+                          <label>{copy.phone}</label>
+                          {pharmacy.phoneNumber && getPhoneUrl(pharmacy.phoneNumber)
+                            ? <a href={getPhoneUrl(pharmacy.phoneNumber)}>{pharmacy.phoneNumber}</a>
+                            : <strong>{copy.notProvided}</strong>}
+                        </div>
+                      </div>
+
+                      {pharmacy.openingHours.length > 0 ? (
+                        <details className="hours-details">
+                          <summary>{copy.fullSchedule}</summary>
+                          <ul>
+                            {pharmacy.openingHours.map((day) => <li key={day}>{day}</li>)}
+                          </ul>
+                        </details>
+                      ) : null}
+                      <p className="data-note">{copy.dataNote}</p>
+
+                      <div className="attribution" translate="no">
+                        {copy.dataAttribution}{' '}
+                        <a href="https://maps.google.com/" target="_blank" rel="noreferrer">Google Maps</a>
+                      </div>
+
+                      <div className="cta-row">
+                        <a className="action-button action-directions" href={getDirectionsUrl(pharmacy)} target="_blank" rel="noreferrer">
+                          <svg className="action-icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M4 20h4a3 3 0 0 0 3-3v-6a3 3 0 0 1 3-3h6" />
+                            <path d="m16 4 4 4-4 4" />
+                          </svg>
+                          {copy.directions}
+                        </a>
+                        <a className="action-button action-maps" href={pharmacy.mapsUrl} target="_blank" rel="noreferrer">
+                          <svg className="action-icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z" />
+                            <circle cx="12" cy="10" r="2.5" />
+                          </svg>
+                          {copy.viewOnGoogle}
+                        </a>
+                        {pharmacy.phoneNumber && getPhoneUrl(pharmacy.phoneNumber) ? (
+                          <a className="action-button action-call" href={getPhoneUrl(pharmacy.phoneNumber)} title={pharmacy.phoneNumber}>
+                            <svg className="action-icon" viewBox="0 0 24 24" aria-hidden="true">
+                              <path d="M7 3h3l1.5 5-2 1.5a15 15 0 0 0 5 5l1.5-2 5 1.5v3a2 2 0 0 1-2.2 2A17 17 0 0 1 5 5.2 2 2 0 0 1 7 3Z" />
+                            </svg>
+                            {copy.callPharmacy}
+                          </a>
+                        ) : null}
+                      </div>
+                    </div>
+                  ) : null}
+                </article>
               );
             })}
             {!isSearching && pharmacies.length === 0 ? (
@@ -360,54 +485,6 @@ function App() {
           </div>
         </section>
 
-        <aside className="panel detail-panel">
-          {selected ? (
-            <>
-              <div className="badge-row">
-                {heroDistance !== null ? <span className="pill muted">{formatDistance(heroDistance)}</span> : null}
-              </div>
-
-              <h2>{selected.name === 'Pharmacy' ? copy.unnamedPharmacy : selected.name}</h2>
-              <p className="address">{selected.address || copy.addressMissing}</p>
-
-              <div className="meta-grid">
-                <div>
-                  <label>{copy.openToday}</label>
-                  <strong>{formatTodayHours(selected.todayHours)}</strong>
-                </div>
-                <div>
-                  <label>{copy.phone}</label>
-                  {selected.phoneNumber && getPhoneUrl(selected.phoneNumber)
-                    ? <a href={getPhoneUrl(selected.phoneNumber)}>{selected.phoneNumber}</a>
-                    : <strong>{copy.notProvided}</strong>}
-                </div>
-              </div>
-
-              {selected.openingHours.length > 0 ? (
-                <details className="hours-details">
-                  <summary>{copy.fullSchedule}</summary>
-                  <ul>
-                    {selected.openingHours.map((day) => <li key={day}>{day}</li>)}
-                  </ul>
-                </details>
-              ) : null}
-              <p className="data-note">{copy.dataNote}</p>
-
-              <div className="attribution" translate="no">
-                {copy.dataAttribution}{' '}
-                <a href="https://maps.google.com/" target="_blank" rel="noreferrer">Google Maps</a>
-              </div>
-
-              <div className="cta-row">
-                <a href={getDirectionsUrl(selected)} target="_blank" rel="noreferrer">{copy.directions}</a>
-                <a href={selected.mapsUrl} target="_blank" rel="noreferrer">{copy.viewOnGoogle}</a>
-                {selected.phoneNumber && getPhoneUrl(selected.phoneNumber)
-                  ? <a href={getPhoneUrl(selected.phoneNumber)} title={selected.phoneNumber}>{copy.callPharmacy}</a>
-                  : null}
-              </div>
-            </>
-          ) : <p className="empty-state">{copy.noSelection}</p>}
-        </aside>
       </main>
       <footer className="site-footer">
         <div className="footer-brand">
@@ -419,8 +496,8 @@ function App() {
           <a href="https://hiltunenjuho.github.io/" target="_blank" rel="noopener noreferrer">Portfolio</a>
           <a href="https://github.com/hiltunenjuho" target="_blank" rel="noopener noreferrer">GitHub</a>
           <a href="https://www.linkedin.com/in/hiltunenjuho/" target="_blank" rel="noopener noreferrer">LinkedIn</a>
-          <a href="https://github.com/hiltunenjuho/nearest-pharmacy-web" target="_blank" rel="noopener noreferrer">{language === 'fi' ? 'Web-projekti' : 'Web repository'}</a>
-          <a href="https://github.com/hiltunenjuho/nearest-pharmacy-ios" target="_blank" rel="noopener noreferrer">{language === 'fi' ? 'iOS-projekti' : 'iOS repository'}</a>
+          <a href="https://github.com/hiltunenjuho/nearest-pharmacy-web" target="_blank" rel="noopener noreferrer">{copy.webRepository}</a>
+          <a href="https://github.com/hiltunenjuho/nearest-pharmacy-ios" target="_blank" rel="noopener noreferrer">{copy.iosRepository}</a>
           <a href="https://github.com/hiltunenjuho/nearest-pharmacy-web/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">{language === 'fi' ? 'MIT-lisenssi' : 'MIT License'}</a>
         </nav>
       </footer>
