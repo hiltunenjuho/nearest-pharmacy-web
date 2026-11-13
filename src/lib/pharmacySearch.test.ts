@@ -23,11 +23,33 @@ describe('searchNearbyPharmacies', () => {
         lng: 24,
         todayHours: null,
         openingHours: [],
+        openNow: false,
+        nextOpenTime: '2025-01-06T09:00:00.000Z',
+        nextCloseTime: null,
       }],
     }), { status: 200 })));
 
     await expect(searchNearbyPharmacies({ lat: 60, lng: 24 }, 'en')).resolves.toMatchObject([
       { id: 'place-123', name: 'Pharmacy' },
+    ]);
+  });
+
+  it('accepts existing Worker responses without opening-status fields', async () => {
+    vi.stubEnv('VITE_PHARMACY_API_URL', 'https://api.example/api/pharmacies/search');
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      pharmacies: [{
+        id: 'place-legacy',
+        name: 'Pharmacy',
+        address: 'Street 1',
+        lat: 60,
+        lng: 24,
+        todayHours: null,
+        openingHours: [],
+      }],
+    }), { status: 200 })));
+
+    await expect(searchNearbyPharmacies({ lat: 60, lng: 24 }, 'en')).resolves.toMatchObject([
+      { id: 'place-legacy', name: 'Pharmacy' },
     ]);
   });
 

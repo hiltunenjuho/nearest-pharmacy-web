@@ -21,6 +21,11 @@ function isPharmacy(value: unknown): value is Pharmacy {
     (pharmacy.todayHours === null || typeof pharmacy.todayHours === 'string') &&
     Array.isArray(pharmacy.openingHours) &&
     pharmacy.openingHours.every((entry) => typeof entry === 'string') &&
+    (pharmacy.openNow === undefined || pharmacy.openNow === null || typeof pharmacy.openNow === 'boolean') &&
+    (pharmacy.nextOpenTime === undefined || pharmacy.nextOpenTime === null ||
+      (typeof pharmacy.nextOpenTime === 'string' && Number.isFinite(Date.parse(pharmacy.nextOpenTime)))) &&
+    (pharmacy.nextCloseTime === undefined || pharmacy.nextCloseTime === null ||
+      (typeof pharmacy.nextCloseTime === 'string' && Number.isFinite(Date.parse(pharmacy.nextCloseTime)))) &&
     (pharmacy.phoneNumber === undefined || typeof pharmacy.phoneNumber === 'string');
 }
 

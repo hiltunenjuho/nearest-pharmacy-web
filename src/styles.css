@@ -98,6 +98,10 @@ button {
 }
 
 .app-shell {
+  display: flex;
+  min-height: 100vh;
+  min-height: 100dvh;
+  flex-direction: column;
   max-width: 1200px;
   margin: 0 auto;
   padding: 32px 20px 60px;
@@ -106,17 +110,23 @@ button {
 .topbar {
   position: relative;
   z-index: 5;
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 44px auto 44px;
+  grid-template-areas:
+    "brand info controls menu"
+    "find find find find";
   align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 10px;
+  column-gap: 12px;
+  row-gap: 14px;
+  margin-bottom: 18px;
 }
 
 .brand-heading {
+  grid-area: brand;
   display: flex;
   align-items: center;
   gap: 14px;
+  min-width: 0;
 }
 
 .brand-logo {
@@ -143,8 +153,9 @@ button {
 }
 
 .header-menu {
+  grid-area: menu;
   position: relative;
-  flex: 0 0 auto;
+  justify-self: end;
 }
 
 .menu-toggle {
@@ -187,6 +198,26 @@ button {
   border-radius: 14px;
   background: var(--panel-alt);
   box-shadow: 0 16px 36px rgba(0, 0, 0, 0.24);
+  opacity: 0;
+  transform: translateY(-8px) scale(0.98);
+  transform-origin: top right;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity 180ms ease,
+    transform 180ms cubic-bezier(0.2, 0.75, 0.25, 1),
+    visibility 0s linear 180ms;
+}
+
+.quick-links.is-open {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  visibility: visible;
+  pointer-events: auto;
+  transition:
+    opacity 180ms ease,
+    transform 180ms cubic-bezier(0.2, 0.75, 0.25, 1),
+    visibility 0s;
 }
 
 .quick-links a {
@@ -203,6 +234,12 @@ button {
 .quick-links a:focus-visible {
   color: var(--pharmacy-green);
   background: var(--pharmacy-green-soft);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .quick-links {
+    transition: none;
+  }
 }
 
 .utility-button {
@@ -234,30 +271,23 @@ button {
   line-height: 1;
 }
 
-.utility-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-  align-items: center;
-  gap: 16px;
-  margin: 14px 0 18px;
-}
-
 .info-button {
-  grid-column: 1;
-  justify-self: start;
+  grid-area: info;
+  justify-self: end;
+  width: 44px;
   padding: 0;
-  border: 0;
-  background: transparent;
+  border: 1px solid var(--border);
+  background: var(--panel-alt);
 }
 
 .info-button:hover,
 .info-button:focus-visible {
+  border-color: var(--pharmacy-green);
   color: var(--pharmacy-green);
-  background: transparent;
 }
 
 .header-controls {
-  grid-column: 3;
+  grid-area: controls;
   justify-self: end;
   display: flex;
   align-items: center;
@@ -351,7 +381,7 @@ button {
 }
 
 .primary-button {
-  grid-column: 2;
+  grid-area: find;
   justify-self: center;
   width: 350px;
   min-height: 48px;
@@ -382,11 +412,22 @@ button {
   padding: 0.8rem 1rem;
 }
 
+.subtitle,
+.notice,
+.content-grid,
+.site-footer {
+  width: 100%;
+  max-width: 1040px;
+  margin-right: auto;
+  margin-left: auto;
+}
+
 /* Search results and the selected pharmacy detail panel. */
 .content-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: 24px;
+  margin-bottom: 34px;
 }
 
 .panel {
@@ -418,6 +459,35 @@ button {
   color: var(--text-soft);
   font-size: 0.8rem;
   text-align: right;
+}
+
+.filter-toggle {
+  display: flex;
+  width: fit-content;
+  max-width: 100%;
+  gap: 4px;
+  margin: 0 0 14px;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--bg-soft);
+}
+
+.filter-toggle button {
+  min-height: 40px;
+  padding: 7px 14px;
+  border: 0;
+  border-radius: 10px;
+  color: var(--text-soft);
+  background: transparent;
+  font-size: 0.88rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.filter-toggle button[aria-pressed="true"] {
+  color: var(--button-text);
+  background: linear-gradient(135deg, var(--pharmacy-green), var(--pharmacy-green-strong));
 }
 
 .pharmacy-list {
@@ -495,6 +565,15 @@ button {
   display: block;
   margin-top: 10px;
   color: var(--text-soft);
+}
+
+.card-summary .opening-countdown {
+  color: var(--pharmacy-green);
+  font-weight: 700;
+}
+
+.card-summary .today-hours {
+  margin-top: 4px;
 }
 
 .pharmacy-card-chevron {
@@ -591,7 +670,7 @@ button {
   align-items: center;
   flex-wrap: wrap;
   gap: 24px;
-  margin-top: 34px;
+  margin-top: auto;
   padding: 26px;
   border: 1px solid color-mix(in srgb, var(--pharmacy-green) 38%, transparent);
   border-radius: 20px;
@@ -782,24 +861,24 @@ summary:focus-visible {
 }
 
 @media (max-width: 940px) {
-  .utility-row {
-    grid-template-columns: 44px minmax(0, 1fr);
-    grid-template-rows: auto auto;
+  .topbar {
+    grid-template-columns: 44px minmax(0, 1fr) 44px;
+    grid-template-areas:
+      "brand brand menu"
+      "info controls controls"
+      "find find find";
+    row-gap: 12px;
   }
 
   .info-button {
-    grid-column: 1;
-    grid-row: 1;
+    justify-self: start;
   }
 
   .header-controls {
-    grid-column: 2;
-    grid-row: 1;
+    justify-self: end;
   }
 
   .primary-button {
-    grid-column: 1 / -1;
-    grid-row: 2;
     width: 100%;
   }
 }
@@ -815,6 +894,20 @@ summary:focus-visible {
 
   .topbar h1 {
     font-size: clamp(1.55rem, 7.2vw, 2rem);
+  }
+
+  .filter-toggle {
+    width: 100%;
+  }
+
+  .filter-toggle button {
+    flex: 1;
+    min-height: 44px;
+    padding: 8px 5px;
+    font-size: 0.76rem;
+    line-height: 1.15;
+    white-space: normal;
+    text-align: center;
   }
 
   .brand-heading {

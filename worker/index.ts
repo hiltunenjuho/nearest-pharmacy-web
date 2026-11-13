@@ -7,6 +7,9 @@ const PLACES_FIELD_MASK = [
   'places.location',
   'places.nationalPhoneNumber',
   'places.utcOffsetMinutes',
+  'places.currentOpeningHours.openNow',
+  'places.currentOpeningHours.nextOpenTime',
+  'places.currentOpeningHours.nextCloseTime',
   'places.currentOpeningHours.weekdayDescriptions',
 ].join(',');
 const SEARCH_RADIUS_METERS = 50_000;
@@ -46,6 +49,11 @@ function formatHoursDescription(description: string, language: Language) {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function normalizeTimestamp(value: unknown) {
+  const timestamp = typeof value === 'string' ? Date.parse(value) : Number.NaN;
+  return Number.isFinite(timestamp) ? new Date(timestamp).toISOString() : null;
 }
 
 export function parseSearchInput(value: unknown): SearchInput | null {
@@ -164,6 +172,9 @@ function toPharmacy(value: unknown, language: Language) {
       language,
     ),
     openingHours,
+    openNow: typeof currentOpeningHours?.openNow === 'boolean' ? currentOpeningHours.openNow : null,
+    nextOpenTime: normalizeTimestamp(currentOpeningHours?.nextOpenTime),
+    nextCloseTime: normalizeTimestamp(currentOpeningHours?.nextCloseTime),
     phoneNumber: typeof phoneNumber === 'string' ? phoneNumber : undefined,
   };
 }

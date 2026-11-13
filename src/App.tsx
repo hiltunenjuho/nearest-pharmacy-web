@@ -3,6 +3,8 @@ import { searchNearbyPharmacies } from './lib/pharmacySearch';
 import { formatDistance, getDistanceKm, type Coordinates } from './lib/location';
 import { getDirectionsUrl } from './lib/mapsUrls';
 import { getPhoneUrl } from './lib/phoneUrl';
+import { filterPharmacies, type PharmacyFilter } from './lib/pharmacyFilters';
+import { getOpeningCountdown } from './lib/openingCountdown';
 import type { Pharmacy } from './types/pharmacy';
 
 type Theme = 'light' | 'dark';
@@ -24,11 +26,20 @@ const messages = {
     subtitle: 'Find up to 10 of the closest pharmacies within 50 km of your location.',
     nearest: 'Nearest pharmacies',
     resultCount: (count: number) => `${count} of up to 10`,
+    filterPharmacies: 'Filter pharmacies',
+    filterAll: 'All',
+    filterOpenNow: 'Open now',
+    filterOpensEarliest: 'Opens earliest',
+    noneOpen: 'No pharmacies are open right now.',
+    noneClosed: 'No closed pharmacies were found.',
+    openingStatusUnavailable: 'Current opening status is unavailable for these results.',
     findLocation: 'Use your location to search Google Maps for nearby pharmacies.',
     noResults: 'No pharmacies were found within 50 km.',
     addressMissing: 'Address not provided',
     unnamedPharmacy: 'Pharmacy',
     hoursUnavailable: 'Hours unavailable',
+    openFor: (duration: string) => `Open for ${duration}`,
+    opensIn: (duration: string) => `Opens in ${duration}`,
     openToday: 'OPEN TODAY',
     phone: 'Phone',
     notProvided: 'Not provided',
@@ -84,11 +95,20 @@ const messages = {
     subtitle: 'Löydä enintään 10 lähintä apteekkia 50 km säteellä sijainnistasi.',
     nearest: 'Lähimmät apteekit',
     resultCount: (count: number) => `${count} / enintään 10`,
+    filterPharmacies: 'Suodata apteekkeja',
+    filterAll: 'Kaikki',
+    filterOpenNow: 'Avoinna nyt',
+    filterOpensEarliest: 'Avautuu aikaisimmin',
+    noneOpen: 'Yksikään apteekki ei ole nyt avoinna.',
+    noneClosed: 'Suljettuja apteekkeja ei löytynyt.',
+    openingStatusUnavailable: 'Apteekkien tämänhetkistä aukiolotietoa ei ole saatavilla.',
     findLocation: 'Paikanna itsesi hakeaksesi lähellä olevat apteekit Google Mapsista.',
     noResults: '50 km säteeltä ei löytynyt apteekkeja.',
     addressMissing: 'Osoitetta ei ole saatavilla',
     unnamedPharmacy: 'Apteekki',
     hoursUnavailable: 'Aukioloaikoja ei ole saatavilla',
+    openFor: (duration: string) => `Avoinna vielä ${duration}`,
+    opensIn: (duration: string) => `Avautuu ${duration} päästä`,
     openToday: 'AVOINNA TÄNÄÄN',
     phone: 'Puhelin',
     notProvided: 'Ei ilmoitettu',
@@ -173,6 +193,8 @@ function App() {
   });
   const [userLocation, setUserLocation] = useState<Coordinates | null>(null);
   const [pharmacies, setPharmacies] = useState<Pharmacy[]>([]);
+  const [filterMode, setFilterMode] = useState<PharmacyFilter>('all');
+  const [currentTime, setCurrentTime] = useState(() => Date.now());
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSearching, setIsSearching] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -182,12 +204,21 @@ function App() {
   const menuRef = useRef<HTMLDivElement>(null);
   const copy = messages[language];
   const effectiveTheme = themeOverride ?? (systemPrefersDark ? 'dark' : 'light');
+  const visiblePharmacies = filterPharmacies(pharmacies, filterMode, userLocation);
+  const filterEmptyMessage = pharmacies.some((pharmacy) => typeof pharmacy.openNow !== 'boolean')
+    ? copy.openingStatusUnavailable
+    : filterMode === 'openNow' ? copy.noneOpen : copy.noneClosed;
 
   useEffect(() => {
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     const handleChange = (event: MediaQueryListEvent) => setSystemPrefersDark(event.matches);
     mediaQuery.addEventListener('change', handleChange);
     return () => mediaQuery.removeEventListener('change', handleChange);
+  }, []);
+
+  useEffect(() => {
+    const timerId = window.setInterval(() => setCurrentTime(Date.now()), 60_000);
+    return () => window.clearInterval(timerId);
   }, []);
 
   useEffect(() => {
@@ -240,6 +271,7 @@ function App() {
 
     setIsSearching(true);
     setErrorMessage(null);
+    setFilterMode('all');
 
     try {
       const position = await new Promise<GeolocationPosition>((resolve, reject) => {
@@ -271,6 +303,12 @@ function App() {
     return hours?.trim() || copy.hoursUnavailable;
   };
 
+  const handleFilterChange = (nextFilter: PharmacyFilter) => {
+    setFilterMode(nextFilter);
+    const matches = filterPharmacies(pharmacies, nextFilter, userLocation);
+    setSelectedId(matches[0]?.id ?? null);
+  };
+
   const handleThemeToggle = () => {
     const nextTheme = effectiveTheme === 'dark' ? 'light' : 'dark';
     // Apply the fade only for this change; the stored preference still overrides system appearance.
@@ -290,39 +328,6 @@ function App() {
             <h1>Pharmacy Finder</h1>
           </div>
         </div>
-        <div className="header-menu" ref={menuRef}>
-          <button
-            className="menu-toggle"
-            type="button"
-            aria-expanded={isMenuOpen}
-            aria-controls="quick-links"
-            aria-label={isMenuOpen ? copy.closeMenu : copy.menuControl}
-            onClick={() => setIsMenuOpen((isOpen) => !isOpen)}
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M4 7h16M4 12h16M4 17h16" />
-            </svg>
-          </button>
-          {isMenuOpen ? (
-            <nav className="quick-links" id="quick-links" aria-label={copy.menuLabel}>
-              <a href="https://hiltunenjuho.github.io/" target="_blank" rel="noopener noreferrer" onClick={() => setIsMenuOpen(false)}>
-                Juho Hiltunen
-              </a>
-              <a href="https://www.linkedin.com/in/hiltunenjuho/" target="_blank" rel="noopener noreferrer" onClick={() => setIsMenuOpen(false)}>
-                LinkedIn
-              </a>
-              <a href="https://github.com/hiltunenjuho" target="_blank" rel="noopener noreferrer" onClick={() => setIsMenuOpen(false)}>
-                GitHub
-              </a>
-              <a href="https://hiltunenjuho.github.io/#contact" target="_blank" rel="noopener noreferrer" onClick={() => setIsMenuOpen(false)}>
-                {copy.contact}
-              </a>
-            </nav>
-          ) : null}
-        </div>
-      </header>
-
-      <div className="utility-row">
         <button
           className="utility-button info-button"
           type="button"
@@ -373,7 +378,40 @@ function App() {
             <span className="toggle-thumb" aria-hidden="true" />
           </button>
         </div>
-      </div>
+        <div className="header-menu" ref={menuRef}>
+          <button
+            className="menu-toggle"
+            type="button"
+            aria-expanded={isMenuOpen}
+            aria-controls="quick-links"
+            aria-label={isMenuOpen ? copy.closeMenu : copy.menuControl}
+            onClick={() => setIsMenuOpen((isOpen) => !isOpen)}
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 7h16M4 12h16M4 17h16" />
+            </svg>
+          </button>
+          <nav
+            className={`quick-links ${isMenuOpen ? 'is-open' : ''}`}
+            id="quick-links"
+            aria-label={copy.menuLabel}
+            aria-hidden={!isMenuOpen}
+          >
+            <a tabIndex={isMenuOpen ? 0 : -1} href="https://hiltunenjuho.github.io/" target="_blank" rel="noopener noreferrer" onClick={() => setIsMenuOpen(false)}>
+              Juho Hiltunen
+            </a>
+            <a tabIndex={isMenuOpen ? 0 : -1} href="https://www.linkedin.com/in/hiltunenjuho/" target="_blank" rel="noopener noreferrer" onClick={() => setIsMenuOpen(false)}>
+              LinkedIn
+            </a>
+            <a tabIndex={isMenuOpen ? 0 : -1} href="https://github.com/hiltunenjuho" target="_blank" rel="noopener noreferrer" onClick={() => setIsMenuOpen(false)}>
+              GitHub
+            </a>
+            <a tabIndex={isMenuOpen ? 0 : -1} href="https://hiltunenjuho.github.io/#contact" target="_blank" rel="noopener noreferrer" onClick={() => setIsMenuOpen(false)}>
+              {copy.contact}
+            </a>
+          </nav>
+        </div>
+      </header>
 
       <p className="subtitle">{copy.subtitle}</p>
 
@@ -383,16 +421,43 @@ function App() {
         <section className="panel list-panel">
           <div className="panel-header">
             <h2>{copy.nearest}</h2>
-            <span>{copy.resultCount(pharmacies.length)}</span>
+            <span>{copy.resultCount(visiblePharmacies.length)}</span>
           </div>
 
+          {pharmacies.length > 0 ? (
+            <div className="filter-toggle" role="group" aria-label={copy.filterPharmacies}>
+              <button
+                type="button"
+                aria-pressed={filterMode === 'all'}
+                onClick={() => handleFilterChange('all')}
+              >
+                {copy.filterAll}
+              </button>
+              <button
+                type="button"
+                aria-pressed={filterMode === 'openNow'}
+                onClick={() => handleFilterChange('openNow')}
+              >
+                {copy.filterOpenNow}
+              </button>
+              <button
+                type="button"
+                aria-pressed={filterMode === 'opensEarliest'}
+                onClick={() => handleFilterChange('opensEarliest')}
+              >
+                {copy.filterOpensEarliest}
+              </button>
+            </div>
+          ) : null}
+
           <div className="pharmacy-list">
-            {pharmacies.map((pharmacy, index) => {
+            {visiblePharmacies.map((pharmacy, index) => {
               const distance = userLocation
                 ? getDistanceKm(userLocation, { lat: pharmacy.lat, lng: pharmacy.lng })
                 : null;
               const expanded = pharmacy.id === selectedId;
               const detailsId = `pharmacy-details-${index}`;
+              const openingCountdown = getOpeningCountdown(pharmacy, currentTime);
 
               return (
                 <article
@@ -410,7 +475,14 @@ function App() {
                       <div className="card-summary">
                         <strong>{pharmacy.name === 'Pharmacy' ? copy.unnamedPharmacy : pharmacy.name}</strong>
                         <p>{pharmacy.address || copy.addressMissing}</p>
-                        <small>{formatTodayHours(pharmacy.todayHours)}</small>
+                        {openingCountdown ? (
+                          <small className="opening-countdown">
+                            {openingCountdown.isOpen
+                              ? copy.openFor(openingCountdown.duration)
+                              : copy.opensIn(openingCountdown.duration)}
+                          </small>
+                        ) : null}
+                        <small className="today-hours">{formatTodayHours(pharmacy.todayHours)}</small>
                       </div>
                       {distance !== null ? <span className="pharmacy-distance">{formatDistance(distance)}</span> : null}
                       <svg className="pharmacy-card-chevron" viewBox="0 0 24 24" aria-hidden="true">
@@ -472,6 +544,9 @@ function App() {
             })}
             {!isSearching && pharmacies.length === 0 ? (
               <p className="empty-state">{copy.findLocation}</p>
+            ) : null}
+            {pharmacies.length > 0 && visiblePharmacies.length === 0 ? (
+              <p className="empty-state" role="status">{filterEmptyMessage}</p>
             ) : null}
           </div>
         </section>

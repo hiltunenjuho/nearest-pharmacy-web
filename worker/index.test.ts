@@ -68,6 +68,8 @@ describe('Cloudflare Places Worker', () => {
         nationalPhoneNumber: '+358 9 123 456',
         utcOffsetMinutes: 120,
         currentOpeningHours: {
+          openNow: false,
+          nextOpenTime: '2025-01-06T09:00:00+02:00',
           weekdayDescriptions: [
             'sunnuntai: Suljettu',
             'maanantai: 9:00 AM–5:00 PM',
@@ -77,6 +79,15 @@ describe('Cloudflare Places Worker', () => {
             'perjantai: 9.00–17.00',
             'lauantai: 10.00–14.00',
           ],
+        },
+      }, {
+        id: 'place-open',
+        displayName: { text: 'Open Pharmacy' },
+        formattedAddress: 'Katu 2, Helsinki',
+        location: { latitude: 60.18, longitude: 24.95 },
+        currentOpeningHours: {
+          openNow: true,
+          nextCloseTime: '2025-01-06T01:30:00+02:00',
         },
       }],
     }), { status: 200 }));
@@ -101,12 +112,29 @@ describe('Cloudflare Places Worker', () => {
     expect(body.pharmacies[0]).toMatchObject({
       id: 'place-123',
       todayHours: '09.00–17.00',
+      openNow: false,
+      nextOpenTime: '2025-01-06T07:00:00.000Z',
+      nextCloseTime: null,
+    });
+    expect(body.pharmacies[1]).toMatchObject({
+      id: 'place-open',
+      openNow: true,
+      nextCloseTime: '2025-01-05T23:30:00.000Z',
     });
     expect(body.pharmacies[0]).not.toHaveProperty('mapsUrl');
     expect(body.pharmacies[0].openingHours).toContain('maanantai: 09.00–17.00');
     expect(googleUrl).toBe('https://places.googleapis.com/v1/places:searchNearby');
     expect(googleOptions.headers).toMatchObject({
       'X-Goog-Api-Key': 'test-demo-key',
+    });
+    expect(googleOptions.headers).toMatchObject({
+      'X-Goog-FieldMask': expect.stringContaining('places.currentOpeningHours.openNow'),
+    });
+    expect(googleOptions.headers).toMatchObject({
+      'X-Goog-FieldMask': expect.stringContaining('places.currentOpeningHours.nextOpenTime'),
+    });
+    expect(googleOptions.headers).toMatchObject({
+      'X-Goog-FieldMask': expect.stringContaining('places.currentOpeningHours.nextCloseTime'),
     });
     expect(googleBody).toMatchObject({
       includedTypes: ['pharmacy'],

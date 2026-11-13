@@ -9,6 +9,8 @@ React, TypeScript, and Vite web client for the Pharmacy Finder portfolio project
 - Uses browser geolocation to search around the user's current position anywhere in the world
 - Searches Google Places API (New) within a maximum 50 km radius and returns up to 10 nearby pharmacies, ranked by distance
 - Displays pharmacy details and today's opening hours when Google Maps provides them
+- Filters results to all pharmacies, those open now, or closed pharmacies ordered by next opening time (nearest first for ties)
+- Shows an estimated countdown to closing or the next opening when Google Maps provides a timestamp
 - Provides direct route planning and phone links when a number is available
 - Includes an English/Finnish language toggle, initially using the browser's system language
 - Includes an animated light/dark theme toggle, initially following the system preference
