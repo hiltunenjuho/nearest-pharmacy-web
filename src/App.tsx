@@ -35,7 +35,6 @@ const messages = {
     fullSchedule: 'Full opening-hours schedule',
     dataNote: 'Google Maps details may be incomplete or out of date. Confirm opening hours before travelling.',
     directions: 'Get directions',
-    viewOnGoogle: 'View on Google Maps',
     callPharmacy: 'Call pharmacy',
     dataAttribution: 'Pharmacy information provided by',
     footerBuilt: (year: number) => `Juho Hiltunen · © ${year}`,
@@ -96,7 +95,6 @@ const messages = {
     fullSchedule: 'Koko aukioloaikataulu',
     dataNote: 'Google Mapsin tiedot voivat olla puutteellisia tai vanhentuneita. Varmista aukioloajat ennen matkaa.',
     directions: 'Reittiohjeet',
-    viewOnGoogle: 'Näytä Google Mapsissa',
     callPharmacy: 'Soita apteekkiin',
     dataAttribution: 'Apteekkitiedot tarjoaa',
     footerBuilt: (year: number) => `Juho Hiltunen · © ${year}`,
@@ -457,13 +455,6 @@ function App() {
                             <path d="m16 4 4 4-4 4" />
                           </svg>
                           {copy.directions}
-                        </a>
-                        <a className="action-button action-maps" href={pharmacy.mapsUrl} target="_blank" rel="noreferrer">
-                          <svg className="action-icon" viewBox="0 0 24 24" aria-hidden="true">
-                            <path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z" />
-                            <circle cx="12" cy="10" r="2.5" />
-                          </svg>
-                          {copy.viewOnGoogle}
                         </a>
                         {pharmacy.phoneNumber && getPhoneUrl(pharmacy.phoneNumber) ? (
                           <a className="action-button action-call" href={getPhoneUrl(pharmacy.phoneNumber)} title={pharmacy.phoneNumber}>

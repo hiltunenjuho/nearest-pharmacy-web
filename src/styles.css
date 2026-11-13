@@ -661,12 +661,6 @@ button {
   background: var(--pharmacy-green);
 }
 
-.action-maps {
-  border-color: color-mix(in srgb, #4285f4 42%, transparent);
-  color: #4285f4;
-  background: color-mix(in srgb, #4285f4 10%, var(--panel-alt));
-}
-
 .action-call {
   border-color: color-mix(in srgb, #35a878 42%, transparent);
   color: #35a878;
@@ -840,6 +834,12 @@ summary:focus-visible {
 
   .cta-row {
     flex-direction: column;
+  }
+
+  .action-button {
+    flex: 0 0 auto;
+    min-height: 44px;
+    padding: 8px 12px;
   }
 
   .site-footer {

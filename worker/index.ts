@@ -151,10 +151,6 @@ function toPharmacy(value: unknown, language: Language) {
   const phoneNumber = value.nationalPhoneNumber;
   const address = value.formattedAddress;
   const name = typeof displayName?.text === 'string' ? displayName.text.trim() || 'Pharmacy' : 'Pharmacy';
-  const mapsUrl = new URL('https://www.google.com/maps/search/');
-  mapsUrl.searchParams.set('api', '1');
-  mapsUrl.searchParams.set('query', [name, typeof address === 'string' ? address : ''].filter(Boolean).join(', '));
-  mapsUrl.searchParams.set('query_place_id', id);
 
   return {
     id,
@@ -169,7 +165,6 @@ function toPharmacy(value: unknown, language: Language) {
     ),
     openingHours,
     phoneNumber: typeof phoneNumber === 'string' ? phoneNumber : undefined,
-    mapsUrl: mapsUrl.toString(),
   };
 }
 

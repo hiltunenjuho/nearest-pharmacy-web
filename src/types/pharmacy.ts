@@ -7,5 +7,4 @@ export type Pharmacy = {
   todayHours: string | null;
   openingHours: string[];
   phoneNumber?: string;
-  mapsUrl: string;
 };

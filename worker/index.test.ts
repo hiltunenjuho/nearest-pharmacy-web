@@ -101,8 +101,8 @@ describe('Cloudflare Places Worker', () => {
     expect(body.pharmacies[0]).toMatchObject({
       id: 'place-123',
       todayHours: '09.00–17.00',
-      mapsUrl: 'https://www.google.com/maps/search/?api=1&query=Apteekki%2C+Katu+1%2C+Helsinki&query_place_id=place-123',
     });
+    expect(body.pharmacies[0]).not.toHaveProperty('mapsUrl');
     expect(body.pharmacies[0].openingHours).toContain('maanantai: 09.00–17.00');
     expect(googleUrl).toBe('https://places.googleapis.com/v1/places:searchNearby');
     expect(googleOptions.headers).toMatchObject({

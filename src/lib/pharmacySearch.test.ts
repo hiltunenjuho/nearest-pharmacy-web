@@ -23,7 +23,6 @@ describe('searchNearbyPharmacies', () => {
         lng: 24,
         todayHours: null,
         openingHours: [],
-        mapsUrl: 'https://www.google.com/maps/search/?api=1&query_place_id=place-123',
       }],
     }), { status: 200 })));
 

@@ -18,7 +18,6 @@ function isPharmacy(value: unknown): value is Pharmacy {
     typeof pharmacy.address === 'string' &&
     typeof pharmacy.lat === 'number' &&
     typeof pharmacy.lng === 'number' &&
-    typeof pharmacy.mapsUrl === 'string' &&
     (pharmacy.todayHours === null || typeof pharmacy.todayHours === 'string') &&
     Array.isArray(pharmacy.openingHours) &&
     pharmacy.openingHours.every((entry) => typeof entry === 'string') &&
