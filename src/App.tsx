@@ -16,6 +16,9 @@ const messages = {
     languageControl: 'Language',
     themeControl: 'Toggle light or dark theme',
     switchLanguage: 'Switch language to Finnish',
+    openAppSwitcher: 'Open applications menu',
+    closeAppSwitcher: 'Close applications menu',
+    applications: 'Applications',
     menuControl: 'Open quick links',
     closeMenu: 'Close quick links',
     menuLabel: 'Quick links',
@@ -67,7 +70,7 @@ const messages = {
     infoForNerds: 'Info for nerds',
     infoBack: 'Back to overview',
     infoTechnicalTitle: 'How it is built',
-    infoTechnical: 'This project has two apps. The web app uses React, TypeScript, Vite, and CSS. The iOS app uses SwiftUI, Core Location, and URLSession. Both call Google Places API (New) through a Cloudflare Worker. The Google Maps Demo Key stays in a Cloudflare Secret; the Worker validates requests and rate-limits searches.',
+    infoTechnical: 'The project includes a web app and a SwiftUI package intended to run inside an iOS host app. The web app uses React, TypeScript, Vite, and CSS. The iOS package uses SwiftUI, Core Location, and URLSession. Both send searches through a Cloudflare Worker to Google Places API (New). The Google Maps Demo Key stays in a Cloudflare Secret; the Worker validates requests and rate-limits searches.',
     demoDailyLimit: 'The Google Maps Demo Key daily limit has been reached. Please try again tomorrow.',
     rateLimited: 'Too many searches in a short time. Please wait a moment and try again.',
     open24Hours: 'Open 24 hours',
@@ -85,6 +88,9 @@ const messages = {
     languageControl: 'Kieli',
     themeControl: 'Vaihda vaalean ja tumman teeman välillä',
     switchLanguage: 'Vaihda kieleksi englanti',
+    openAppSwitcher: 'Avaa sovellusvalikko',
+    closeAppSwitcher: 'Sulje sovellusvalikko',
+    applications: 'Sovellukset',
     menuControl: 'Avaa pikalinkit',
     closeMenu: 'Sulje pikalinkit',
     menuLabel: 'Pikalinkit',
@@ -136,7 +142,7 @@ const messages = {
     infoForNerds: 'Tietoa nörteille',
     infoBack: 'Takaisin yleiskatsaukseen',
     infoTechnicalTitle: 'Tekninen toteutus',
-    infoTechnical: 'Projektissa on kaksi sovellusta. Web-sovellus käyttää Reactia, TypeScriptiä, Viteä ja CSS:ää. iOS-sovellus käyttää SwiftUI:ta, Core Locationia ja URLSessionia. Molemmat kutsuvat Google Places API (New) -rajapintaa Cloudflare Worker -palvelun kautta. Google Maps Demo Key on Cloudflare Secretissä; Worker validoi pyynnöt ja rajoittaa hakunopeutta.',
+    infoTechnical: 'Projektiin kuuluu web-sovellus sekä SwiftUI-paketti, jota käytetään iOS-isäntäsovelluksen osana. Web-sovellus käyttää Reactia, TypeScriptiä, Viteä ja CSS:ää. iOS-paketti käyttää SwiftUI:ta, Core Locationia ja URLSessionia. Molemmat välittävät haut Google Places API (New) -rajapintaan Cloudflare Worker -palvelun kautta. Google Maps Demo Key säilytetään Cloudflare Secretissä; Worker validoi pyynnöt ja rajoittaa hakunopeutta.',
     demoDailyLimit: 'Google Maps Demo Keyn päiväkohtainen kiintiö on täynnä. Yritä uudelleen huomenna.',
     rateLimited: 'Hakuja on tehty liian nopeasti. Odota hetki ja yritä uudelleen.',
     meters: 'm päässä',
@@ -197,10 +203,13 @@ function App() {
   const [currentTime, setCurrentTime] = useState(() => Date.now());
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSearching, setIsSearching] = useState(false);
+  const [isAppSwitcherOpen, setIsAppSwitcherOpen] = useState(false);
+  const [isComingSoonVisible, setIsComingSoonVisible] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isInfoOpen, setIsInfoOpen] = useState(false);
   const [infoPage, setInfoPage] = useState<InfoPage>('about');
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const appSwitcherButtonRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const copy = messages[language];
   const effectiveTheme = themeOverride ?? (systemPrefersDark ? 'dark' : 'light');
@@ -273,6 +282,20 @@ function App() {
     };
   }, [isMenuOpen]);
 
+  useEffect(() => {
+    if (!isAppSwitcherOpen) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      setIsAppSwitcherOpen(false);
+      setIsComingSoonVisible(false);
+      appSwitcherButtonRef.current?.focus();
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isAppSwitcherOpen]);
+
   const handleLocate = async () => {
     if (!navigator.geolocation) {
       setErrorMessage(copy.locationUnsupported);
@@ -323,6 +346,8 @@ function App() {
     setInfoPage('about');
     setIsInfoOpen(true);
     setIsMenuOpen(false);
+    setIsAppSwitcherOpen(false);
+    setIsComingSoonVisible(false);
   };
 
   const handleThemeToggle = () => {
@@ -336,101 +361,190 @@ function App() {
 
   return (
     <div className="page-shell">
+      {isAppSwitcherOpen && (
+        <button
+          className="app-switcher-backdrop"
+          type="button"
+          aria-label={copy.closeAppSwitcher}
+          tabIndex={-1}
+          onClick={() => {
+            setIsAppSwitcherOpen(false);
+            setIsComingSoonVisible(false);
+            appSwitcherButtonRef.current?.focus();
+          }}
+        />
+      )}
       <div className="app-shell">
         <header className="topbar">
-        <div className="brand-heading">
-          <img className="brand-logo" src={`${import.meta.env.BASE_URL}pharmacy-logo.svg`} alt="" />
-          <div>
-            <div className="eyebrow">Juho Hiltunen</div>
-            <h1>Pharmacy Finder</h1>
+          <div className="brand-heading">
+            <div className="app-switcher">
+              <button
+                ref={appSwitcherButtonRef}
+                className="app-switcher-toggle"
+                type="button"
+                aria-label={isAppSwitcherOpen ? copy.closeAppSwitcher : copy.openAppSwitcher}
+                aria-expanded={isAppSwitcherOpen}
+                aria-controls="app-switcher-menu"
+                onClick={() => {
+                  setIsAppSwitcherOpen((isOpen) => !isOpen);
+                  setIsComingSoonVisible(false);
+                  setIsMenuOpen(false);
+                }}
+              >
+                <img
+                  className="brand-logo"
+                  src={`${import.meta.env.BASE_URL}pharmacy-logo.svg`}
+                  alt=""
+                />
+              </button>
+              {isAppSwitcherOpen && (
+                <nav
+                  className="app-switcher-menu"
+                  id="app-switcher-menu"
+                  aria-label={copy.applications}
+                >
+                  <a
+                    className="app-switcher-item"
+                    href="https://hiltunenjuho.github.io/"
+                  >
+                    <img
+                      className="app-switcher-logo"
+                      src={`${import.meta.env.BASE_URL}portfolio-logo.svg`}
+                      alt=""
+                    />
+                    <span className="app-switcher-name app-switcher-name-portfolio">
+                      Portfolio Website
+                    </span>
+                  </a>
+                  <a
+                    className="app-switcher-item is-current"
+                    href="https://hiltunenjuho.github.io/nearest-pharmacy-web/"
+                    aria-current="page"
+                  >
+                    <img
+                      className="app-switcher-logo"
+                      src={`${import.meta.env.BASE_URL}pharmacy-logo.svg`}
+                      alt=""
+                    />
+                    <span className="app-switcher-name app-switcher-name-pharmacy">
+                      Pharmacy Finder
+                    </span>
+                  </a>
+                  <button
+                    className="app-switcher-item"
+                    type="button"
+                    onClick={() => setIsComingSoonVisible(true)}
+                  >
+                    <img
+                      className="app-switcher-logo"
+                      src={`${import.meta.env.BASE_URL}knowdium-logo.svg`}
+                      alt=""
+                    />
+                    <span className="app-switcher-name app-switcher-name-knowdium">knowdium!</span>
+                  </button>
+                  {isComingSoonVisible && (
+                    <p className="app-switcher-notice" role="status">
+                      COMING SOON!
+                    </p>
+                  )}
+                </nav>
+              )}
+            </div>
+            <div>
+              <div className="eyebrow">Juho Hiltunen</div>
+              <h1>Pharmacy Finder</h1>
+            </div>
           </div>
-        </div>
-        <button
-          className="utility-button info-button"
-          type="button"
-          onClick={handleOpenInfo}
-          aria-label={copy.openInfo}
-        >
-          <span aria-hidden="true">i</span>
-        </button>
-        <button
-          className="primary-button"
-          type="button"
-          onClick={handleLocate}
-          disabled={isSearching}
-        >
-          {isSearching ? copy.searching : copy.findNearby}
-        </button>
-        <div className="header-controls">
           <button
-            className={`language-toggle ${language === 'fi' ? 'is-finnish' : ''}`}
+            className="utility-button info-button"
             type="button"
-            role="switch"
-            aria-checked={language === 'fi'}
-            aria-label={copy.languageControl}
-            onClick={() => setLanguage(language === 'en' ? 'fi' : 'en')}
+            onClick={handleOpenInfo}
+            aria-label={copy.openInfo}
           >
-            <span>EN</span>
-            <span>FI</span>
-            <span className="toggle-thumb" aria-hidden="true" />
+            <span aria-hidden="true">i</span>
           </button>
           <button
-            className={`theme-toggle ${effectiveTheme === 'dark' ? 'is-dark' : ''}`}
+            className="primary-button"
             type="button"
-            role="switch"
-            aria-checked={effectiveTheme === 'dark'}
-            aria-label={copy.themeControl}
-            onClick={handleThemeToggle}
+            onClick={handleLocate}
+            disabled={isSearching}
           >
-            <svg className="theme-icon sun-icon" viewBox="0 0 24 24" aria-hidden="true">
-              <circle cx="12" cy="12" r="4" />
-              <path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42" />
-            </svg>
-            <svg className="theme-icon moon-icon" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M20.2 15.1A8.5 8.5 0 0 1 8.9 3.8 8.5 8.5 0 1 0 20.2 15.1Z" />
-            </svg>
-            <span className="toggle-thumb" aria-hidden="true" />
+            {isSearching ? copy.searching : copy.findNearby}
           </button>
-        </div>
-        <div className="header-menu" ref={menuRef}>
-          <button
-            className="menu-toggle"
-            type="button"
-            aria-expanded={isMenuOpen}
-            aria-controls="quick-links"
-            aria-label={isMenuOpen ? copy.closeMenu : copy.menuControl}
-            onClick={() => setIsMenuOpen((isOpen) => !isOpen)}
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M4 7h16M4 12h16M4 17h16" />
-            </svg>
-          </button>
-          <nav
-            className={`quick-links ${isMenuOpen ? 'is-open' : ''}`}
-            id="quick-links"
-            aria-label={copy.menuLabel}
-            aria-hidden={!isMenuOpen}
-          >
+          <div className="header-controls">
             <button
-              className="quick-link-button"
+              className={`language-toggle ${language === 'fi' ? 'is-finnish' : ''}`}
               type="button"
-              tabIndex={isMenuOpen ? 0 : -1}
-              onClick={handleOpenInfo}
+              role="switch"
+              aria-checked={language === 'fi'}
+              aria-label={copy.languageControl}
+              onClick={() => setLanguage(language === 'en' ? 'fi' : 'en')}
             >
-              {copy.infoMenuItem}
+              <span>EN</span>
+              <span>FI</span>
+              <span className="toggle-thumb" aria-hidden="true" />
             </button>
-            <a tabIndex={isMenuOpen ? 0 : -1} href="https://hiltunenjuho.github.io/" target="_blank" rel="noopener noreferrer" onClick={() => setIsMenuOpen(false)}>
-              Juho Hiltunen
-            </a>
-            <a tabIndex={isMenuOpen ? 0 : -1} href="https://www.linkedin.com/in/hiltunenjuho/" target="_blank" rel="noopener noreferrer" onClick={() => setIsMenuOpen(false)}>
-              LinkedIn
-            </a>
-            <a tabIndex={isMenuOpen ? 0 : -1} href="https://github.com/hiltunenjuho" target="_blank" rel="noopener noreferrer" onClick={() => setIsMenuOpen(false)}>
-              GitHub
-            </a>
-          </nav>
-        </div>
-      </header>
+            <button
+              className={`theme-toggle ${effectiveTheme === 'dark' ? 'is-dark' : ''}`}
+              type="button"
+              role="switch"
+              aria-checked={effectiveTheme === 'dark'}
+              aria-label={copy.themeControl}
+              onClick={handleThemeToggle}
+            >
+              <svg className="theme-icon sun-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="12" r="4" />
+                <path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42" />
+              </svg>
+              <svg className="theme-icon moon-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M20.2 15.1A8.5 8.5 0 0 1 8.9 3.8 8.5 8.5 0 1 0 20.2 15.1Z" />
+              </svg>
+              <span className="toggle-thumb" aria-hidden="true" />
+            </button>
+          </div>
+          <div className="header-menu" ref={menuRef}>
+            <button
+              className="menu-toggle"
+              type="button"
+              aria-expanded={isMenuOpen}
+              aria-controls="quick-links"
+              aria-label={isMenuOpen ? copy.closeMenu : copy.menuControl}
+              onClick={() => {
+                setIsMenuOpen((isOpen) => !isOpen);
+                setIsAppSwitcherOpen(false);
+                setIsComingSoonVisible(false);
+              }}
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 7h16M4 12h16M4 17h16" />
+              </svg>
+            </button>
+            <nav
+              className={`quick-links ${isMenuOpen ? 'is-open' : ''}`}
+              id="quick-links"
+              aria-label={copy.menuLabel}
+              aria-hidden={!isMenuOpen}
+            >
+              <button
+                className="quick-link-button"
+                type="button"
+                tabIndex={isMenuOpen ? 0 : -1}
+                onClick={handleOpenInfo}
+              >
+                {copy.infoMenuItem}
+              </button>
+              <a tabIndex={isMenuOpen ? 0 : -1} href="https://hiltunenjuho.github.io/" target="_blank" rel="noopener noreferrer" onClick={() => setIsMenuOpen(false)}>
+                Juho Hiltunen
+              </a>
+              <a tabIndex={isMenuOpen ? 0 : -1} href="https://www.linkedin.com/in/hiltunenjuho/" target="_blank" rel="noopener noreferrer" onClick={() => setIsMenuOpen(false)}>
+                LinkedIn
+              </a>
+              <a tabIndex={isMenuOpen ? 0 : -1} href="https://github.com/hiltunenjuho" target="_blank" rel="noopener noreferrer" onClick={() => setIsMenuOpen(false)}>
+                GitHub
+              </a>
+            </nav>
+          </div>
+        </header>
 
       <p className="subtitle">{copy.subtitle}</p>
 

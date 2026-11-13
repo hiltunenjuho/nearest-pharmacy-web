@@ -16,6 +16,7 @@ React, TypeScript, and Vite web client for the Pharmacy Finder portfolio project
 - Includes an animated light/dark theme toggle, initially following the system preference
 - Provides an information panel and an "Info for nerds" technical overview
 - Includes a portfolio-style footer and a responsive layout
+- The Worker validates coordinates and language, allows configured browser origins, and rate-limits searches to 8 requests per client IP per 60 seconds
 
 ## Code layout
 
@@ -73,7 +74,7 @@ To deploy Worker changes:
 
    Searches return a configuration error until this secret is set.
 
-The GitHub Pages workflow publishes changes pushed to `main`. It uses the repository variable `VITE_PHARMACY_API_URL` when set and otherwise defaults to the deployed Worker endpoint.
+The GitHub Pages workflow publishes changes pushed to `main` and can also be started manually. It uses the repository variable `VITE_PHARMACY_API_URL` when set and otherwise defaults to the deployed Worker endpoint.
 
 Do not expose the Google Maps Demo Key through `VITE_*` variables, static files, or GitHub Pages configuration. The Worker endpoint itself is public and the Demo Key's daily quota is the final usage cap.
 
@@ -91,3 +92,4 @@ Application code is available under the [MIT License](./LICENSE). Google Maps co
 - [GitHub](https://github.com/hiltunenjuho)
 - [LinkedIn](https://www.linkedin.com/in/hiltunenjuho/)
 - [Web repository](https://github.com/hiltunenjuho/nearest-pharmacy-web)
+- [iOS SwiftUI package](https://github.com/hiltunenjuho/nearest-pharmacy-ios)
