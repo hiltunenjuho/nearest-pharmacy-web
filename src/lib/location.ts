@@ -8,6 +8,7 @@ export function toRadians(value: number) {
 }
 
 export function getDistanceKm(from: Coordinates, to: Coordinates) {
+  // The Haversine formula handles nearby and long-distance searches on a curved Earth.
   const earthRadiusKm = 6371;
   const dLat = toRadians(to.lat - from.lat);
   const dLng = toRadians(to.lng - from.lng);
