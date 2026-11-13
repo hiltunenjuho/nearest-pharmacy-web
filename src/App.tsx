@@ -20,6 +20,7 @@ const messages = {
     closeMenu: 'Close quick links',
     menuLabel: 'Quick links',
     openInfo: 'About this app',
+    infoMenuItem: 'Info about the app',
     close: 'Close',
     findNearby: 'Find nearby pharmacies',
     searching: 'Finding nearby pharmacies...',
@@ -53,7 +54,6 @@ const messages = {
     linksLabel: 'Juho Hiltunen links',
     webRepository: 'Web app source',
     iosRepository: 'iOS app source',
-    contact: 'Contact',
     infoTitle: 'About Pharmacy Finder',
     infoIntro: 'Pharmacy Finder helps you find nearby pharmacies wherever you are.',
     infoPortfolio: 'This is an independent software developer portfolio project and is not affiliated with any organization.',
@@ -89,6 +89,7 @@ const messages = {
     closeMenu: 'Sulje pikalinkit',
     menuLabel: 'Pikalinkit',
     openInfo: 'Tietoa sovelluksesta',
+    infoMenuItem: 'Tietoa sovelluksesta',
     close: 'Sulje',
     findNearby: 'Etsi lähellä olevat apteekit',
     searching: 'Etsitään lähellä olevia apteekkeja...',
@@ -122,7 +123,6 @@ const messages = {
     linksLabel: 'Juho Hiltusen linkit',
     webRepository: 'Web-sovelluksen lähdekoodi',
     iosRepository: 'iOS-sovelluksen lähdekoodi',
-    contact: 'Yhteystiedot',
     infoTitle: 'Tietoa Pharmacy Finderistä',
     infoIntro: 'Pharmacy Finder auttaa löytämään lähellä olevia apteekkeja missä päin maailmaa tahansa.',
     infoPortfolio: 'Tämä on itsenäinen ohjelmistokehittäjän portfolio-projekti, eikä se ole sidoksissa mihinkään organisaatioon.',
@@ -133,7 +133,7 @@ const messages = {
     infoPrivacyTitle: 'Sijainti ja palvelun saatavuus',
     infoPrivacy: 'Sovellus ei tallenna sijaintiasi tai hakutuloksia. Cloudflare välittää koordinaatit Google Mapsiin hakua varten. Maksuttomalla Google Maps Demo Keyllä on päiväkiintiö, joten haku voi keskeytyä tilapäisesti kiintiön täyttyessä.',
     infoSource: 'Apteekkitiedot tarjoaa',
-    infoForNerds: 'Nörttitietoa',
+    infoForNerds: 'Tietoa nörteille',
     infoBack: 'Takaisin yleiskatsaukseen',
     infoTechnicalTitle: 'Tekninen toteutus',
     infoTechnical: 'Projektissa on kaksi sovellusta. Web-sovellus käyttää Reactia, TypeScriptiä, Viteä ja CSS:ää. iOS-sovellus käyttää SwiftUI:ta, Core Locationia ja URLSessionia. Molemmat kutsuvat Google Places API (New) -rajapintaa Cloudflare Worker -palvelun kautta. Google Maps Demo Key on Cloudflare Secretissä; Worker validoi pyynnöt ja rajoittaa hakunopeutta.',
@@ -236,11 +236,21 @@ function App() {
 
   useEffect(() => {
     if (!isInfoOpen) return;
+
+    const rootOverflow = document.documentElement.style.overflow;
+    const bodyOverflow = document.body.style.overflow;
+    document.documentElement.style.overflow = 'hidden';
+    document.body.style.overflow = 'hidden';
+
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') setIsInfoOpen(false);
     };
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.documentElement.style.overflow = rootOverflow;
+      document.body.style.overflow = bodyOverflow;
+    };
   }, [isInfoOpen]);
 
   useEffect(() => {
@@ -309,6 +319,12 @@ function App() {
     setSelectedId(matches[0]?.id ?? null);
   };
 
+  const handleOpenInfo = () => {
+    setInfoPage('about');
+    setIsInfoOpen(true);
+    setIsMenuOpen(false);
+  };
+
   const handleThemeToggle = () => {
     const nextTheme = effectiveTheme === 'dark' ? 'light' : 'dark';
     // Apply the fade only for this change; the stored preference still overrides system appearance.
@@ -319,8 +335,9 @@ function App() {
   };
 
   return (
-    <div className="app-shell">
-      <header className="topbar">
+    <div className="page-shell">
+      <div className="app-shell">
+        <header className="topbar">
         <div className="brand-heading">
           <img className="brand-logo" src={`${import.meta.env.BASE_URL}pharmacy-logo.svg`} alt="" />
           <div>
@@ -331,10 +348,7 @@ function App() {
         <button
           className="utility-button info-button"
           type="button"
-          onClick={() => {
-            setInfoPage('about');
-            setIsInfoOpen(true);
-          }}
+          onClick={handleOpenInfo}
           aria-label={copy.openInfo}
         >
           <span aria-hidden="true">i</span>
@@ -397,6 +411,14 @@ function App() {
             aria-label={copy.menuLabel}
             aria-hidden={!isMenuOpen}
           >
+            <button
+              className="quick-link-button"
+              type="button"
+              tabIndex={isMenuOpen ? 0 : -1}
+              onClick={handleOpenInfo}
+            >
+              {copy.infoMenuItem}
+            </button>
             <a tabIndex={isMenuOpen ? 0 : -1} href="https://hiltunenjuho.github.io/" target="_blank" rel="noopener noreferrer" onClick={() => setIsMenuOpen(false)}>
               Juho Hiltunen
             </a>
@@ -405,9 +427,6 @@ function App() {
             </a>
             <a tabIndex={isMenuOpen ? 0 : -1} href="https://github.com/hiltunenjuho" target="_blank" rel="noopener noreferrer" onClick={() => setIsMenuOpen(false)}>
               GitHub
-            </a>
-            <a tabIndex={isMenuOpen ? 0 : -1} href="https://hiltunenjuho.github.io/#contact" target="_blank" rel="noopener noreferrer" onClick={() => setIsMenuOpen(false)}>
-              {copy.contact}
             </a>
           </nav>
         </div>
@@ -552,20 +571,23 @@ function App() {
         </section>
 
       </main>
+      </div>
       <footer className="site-footer">
-        <div className="footer-brand">
-          <strong>Pharmacy Finder</strong>
-          <span>{copy.footerBuilt(new Date().getFullYear())}</span>
-          <span>{copy.footerPrivacy}</span>
+        <div className="site-footer-content">
+          <div className="footer-brand">
+            <strong>Pharmacy Finder</strong>
+            <span>{copy.footerBuilt(new Date().getFullYear())}</span>
+            <span>{copy.footerPrivacy}</span>
+          </div>
+          <nav className="footer-links" aria-label={copy.linksLabel}>
+            <a href="https://hiltunenjuho.github.io/" target="_blank" rel="noopener noreferrer">Portfolio</a>
+            <a href="https://github.com/hiltunenjuho" target="_blank" rel="noopener noreferrer">GitHub</a>
+            <a href="https://www.linkedin.com/in/hiltunenjuho/" target="_blank" rel="noopener noreferrer">LinkedIn</a>
+            <a href="https://github.com/hiltunenjuho/nearest-pharmacy-web" target="_blank" rel="noopener noreferrer">{copy.webRepository}</a>
+            <a href="https://github.com/hiltunenjuho/nearest-pharmacy-ios" target="_blank" rel="noopener noreferrer">{copy.iosRepository}</a>
+            <a href="https://github.com/hiltunenjuho/nearest-pharmacy-web/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">{language === 'fi' ? 'MIT-lisenssi' : 'MIT License'}</a>
+          </nav>
         </div>
-        <nav className="footer-links" aria-label={copy.linksLabel}>
-          <a href="https://hiltunenjuho.github.io/" target="_blank" rel="noopener noreferrer">Portfolio</a>
-          <a href="https://github.com/hiltunenjuho" target="_blank" rel="noopener noreferrer">GitHub</a>
-          <a href="https://www.linkedin.com/in/hiltunenjuho/" target="_blank" rel="noopener noreferrer">LinkedIn</a>
-          <a href="https://github.com/hiltunenjuho/nearest-pharmacy-web" target="_blank" rel="noopener noreferrer">{copy.webRepository}</a>
-          <a href="https://github.com/hiltunenjuho/nearest-pharmacy-ios" target="_blank" rel="noopener noreferrer">{copy.iosRepository}</a>
-          <a href="https://github.com/hiltunenjuho/nearest-pharmacy-web/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">{language === 'fi' ? 'MIT-lisenssi' : 'MIT License'}</a>
-        </nav>
       </footer>
 
       {isInfoOpen ? (
@@ -576,7 +598,9 @@ function App() {
             if (event.key === 'Escape') setIsInfoOpen(false);
           }}>
             <button className="dialog-close" type="button" autoFocus onClick={() => setIsInfoOpen(false)} aria-label={copy.close}>
-              ×
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="m6 6 12 12M18 6 6 18" />
+              </svg>
             </button>
             {infoPage === 'about' ? (
               <>
@@ -593,9 +617,6 @@ function App() {
                   {copy.infoSource}{' '}
                   <a href="https://maps.google.com/" target="_blank" rel="noreferrer">Google Maps</a>
                 </p>
-                <button className="info-next-button" type="button" onClick={() => setInfoPage('nerds')}>
-                  {copy.infoForNerds}
-                </button>
               </>
             ) : (
               <>
@@ -606,6 +627,16 @@ function App() {
                 <p>{copy.infoTechnical}</p>
               </>
             )}
+            <div className="info-dialog-actions">
+              {infoPage === 'about' ? (
+                <button className="info-next-button" type="button" onClick={() => setInfoPage('nerds')}>
+                  {copy.infoForNerds}
+                </button>
+              ) : null}
+              <button className="info-next-button" type="button" onClick={() => setIsInfoOpen(false)}>
+                {copy.close}
+              </button>
+            </div>
           </section>
         </div>
       ) : null}
