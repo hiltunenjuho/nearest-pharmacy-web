@@ -100,4 +100,4 @@ Application code is available under the [MIT License](./LICENSE). Google Maps co
 - [GitHub](https://github.com/hiltunenjuho)
 - [LinkedIn](https://www.linkedin.com/in/hiltunenjuho/)
 - [Web repository](https://github.com/hiltunenjuho/nearest-pharmacy-web)
-- [iOS SwiftUI package](https://github.com/hiltunenjuho/nearest-pharmacy-ios)
+- [iOS SwiftUI app](https://github.com/hiltunenjuho/nearest-pharmacy-ios)
