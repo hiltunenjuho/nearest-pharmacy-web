@@ -10,7 +10,7 @@ type SearchResponse = {
 const DEFAULT_WORKER_ENDPOINT =
   'https://pharmacy-finder-api.juho-m-hiltunen.workers.dev/api/pharmacies/search';
 
-function isPharmacy(value: unknown): value is Pharmacy {
+export function isPharmacy(value: unknown): value is Pharmacy {
   if (typeof value !== 'object' || value === null) return false;
   const pharmacy = value as Record<string, unknown>;
   return typeof pharmacy.id === 'string' &&

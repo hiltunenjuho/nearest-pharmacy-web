@@ -1,10 +1,17 @@
 import { useEffect, useRef, useState } from 'react';
 import { searchNearbyPharmacies } from './lib/pharmacySearch';
+import {
+  clearSessionPharmacySearch,
+  isSameSearchArea,
+  loadSessionPharmacySearch,
+  saveSessionPharmacySearch,
+} from './lib/pharmacySession';
 import { formatDistance, getDistanceKm, type Coordinates } from './lib/location';
 import { getDirectionsUrl } from './lib/mapsUrls';
 import { getPhoneUrl } from './lib/phoneUrl';
 import { filterPharmacies, type PharmacyFilter } from './lib/pharmacyFilters';
-import { getOpeningCountdown } from './lib/openingCountdown';
+import { getCurrentOpenStatus, getOpeningCountdown } from './lib/openingCountdown';
+import type { SessionPharmacySearch } from './lib/pharmacySession';
 import type { Pharmacy } from './types/pharmacy';
 
 type Theme = 'light' | 'dark';
@@ -18,6 +25,7 @@ const messages = {
     switchLanguage: 'Switch language to Finnish',
     openAppSwitcher: 'Open applications menu',
     closeAppSwitcher: 'Close applications menu',
+    appSwitcherHint: 'Try my other apps!',
     applications: 'Applications',
     menuControl: 'Open quick links',
     closeMenu: 'Close quick links',
@@ -53,7 +61,7 @@ const messages = {
     callPharmacy: 'Call pharmacy',
     dataAttribution: 'Pharmacy information provided by',
     footerBuilt: (year: number) => `Juho Hiltunen · © ${year}`,
-    footerPrivacy: 'Your coordinates are sent through Cloudflare to Google Maps for the search. The app does not save them.',
+    footerPrivacy: 'Your coordinates are sent through Cloudflare to Google Maps for the search. The last successful search location is kept in this tab\'s session storage to reuse searches within 1 km; it is cleared when the tab is closed.',
     linksLabel: 'Juho Hiltunen links',
     webRepository: 'Web app source',
     iosRepository: 'iOS app source',
@@ -65,7 +73,7 @@ const messages = {
     infoDataTitle: 'About the information',
     infoData: 'Pharmacy names, addresses, phone numbers, and current opening hours come from Google Maps. Details may be missing or out of date, so confirm directly before travelling.',
     infoPrivacyTitle: 'Your location and availability',
-    infoPrivacy: 'The app does not save your location or search results. Cloudflare relays the coordinates to Google Maps to perform the search. The free Maps Demo Key has daily limits, so the search may pause temporarily when its limit is reached.',
+    infoPrivacy: 'Search results and the last successful search location are kept in this browser tab\'s session storage so they survive a refresh. Searches within 1 km reuse saved results, and the data is cleared when the tab is closed. Cloudflare relays your coordinates to Google Maps to perform a search. The free Maps Demo Key has daily limits, so the search may pause temporarily when its limit is reached.',
     infoSource: 'Pharmacy information provided by',
     infoForNerds: 'Info for nerds',
     infoBack: 'Back to overview',
@@ -82,6 +90,7 @@ const messages = {
     locationUnavailable: 'Your location could not be determined. Check your device location settings and try again.',
     locationTimeout: 'Finding your location timed out. Please try again.',
     searchFailed: 'Could not load nearby pharmacies. Check your connection and try again.',
+    sessionResultsNotSaved: 'The latest search could not be cached for this tab, so repeating it may use the API again.',
     errorUnknown: 'An unexpected error occurred. Please try again.',
   },
   fi: {
@@ -90,6 +99,7 @@ const messages = {
     switchLanguage: 'Vaihda kieleksi englanti',
     openAppSwitcher: 'Avaa sovellusvalikko',
     closeAppSwitcher: 'Sulje sovellusvalikko',
+    appSwitcherHint: 'Kokeile muita sovelluksiani!',
     applications: 'Sovellukset',
     menuControl: 'Avaa pikalinkit',
     closeMenu: 'Sulje pikalinkit',
@@ -125,7 +135,7 @@ const messages = {
     callPharmacy: 'Soita apteekkiin',
     dataAttribution: 'Apteekkitiedot tarjoaa',
     footerBuilt: (year: number) => `Juho Hiltunen · © ${year}`,
-    footerPrivacy: 'Koordinaatit välitetään Cloudflaren kautta Google Mapsiin hakua varten. Sovellus ei tallenna niitä.',
+    footerPrivacy: 'Koordinaatit välitetään Cloudflaren kautta Google Mapsiin hakua varten. Viimeisimmän onnistuneen haun sijainti säilytetään tämän välilehden istuntomuistissa enintään 1 km:n päässä tehtyjen uusintahakujen välttämiseksi, ja se poistetaan välilehden sulkeutuessa.',
     linksLabel: 'Juho Hiltusen linkit',
     webRepository: 'Web-sovelluksen lähdekoodi',
     iosRepository: 'iOS-sovelluksen lähdekoodi',
@@ -137,7 +147,7 @@ const messages = {
     infoDataTitle: 'Tietojen luotettavuus',
     infoData: 'Apteekkien nimet, osoitteet, puhelinnumerot ja ajantasaiset aukioloajat tulevat Google Mapsista. Tiedot voivat puuttua tai olla vanhentuneita, joten varmista ne apteekista ennen matkaa.',
     infoPrivacyTitle: 'Sijainti ja palvelun saatavuus',
-    infoPrivacy: 'Sovellus ei tallenna sijaintiasi tai hakutuloksia. Cloudflare välittää koordinaatit Google Mapsiin hakua varten. Maksuttomalla Google Maps Demo Keyllä on päiväkiintiö, joten haku voi keskeytyä tilapäisesti kiintiön täyttyessä.',
+    infoPrivacy: 'Hakutulokset ja viimeisimmän onnistuneen haun sijainti säilytetään tämän selaimen välilehden istuntomuistissa, jotta ne säilyvät sivun päivityksen jälkeen. Enintään 1 km:n päässä tehdyt haut käyttävät tallennettuja tuloksia, ja tiedot poistetaan välilehden sulkeutuessa. Cloudflare välittää koordinaatit Google Mapsiin hakua varten. Maksuttomalla Google Maps Demo Keyllä on päiväkiintiö, joten haku voi keskeytyä tilapäisesti kiintiön täyttyessä.',
     infoSource: 'Apteekkitiedot tarjoaa',
     infoForNerds: 'Tietoa nörteille',
     infoBack: 'Takaisin yleiskatsaukseen',
@@ -156,6 +166,7 @@ const messages = {
     locationUnavailable: 'Sijaintia ei voitu määrittää. Tarkista laitteen sijaintiasetukset ja yritä uudelleen.',
     locationTimeout: 'Sijainnin määritys aikakatkaistiin. Yritä uudelleen.',
     searchFailed: 'Lähellä olevien apteekkien haku epäonnistui. Tarkista verkkoyhteys ja yritä uudelleen.',
+    sessionResultsNotSaved: 'Viimeisintä hakua ei voitu tallentaa tämän välilehden muistiin, joten sen uusiminen voi käyttää APIa uudelleen.',
     errorUnknown: 'Tapahtui odottamaton virhe. Yritä uudelleen.',
   },
 } as const;
@@ -197,8 +208,11 @@ function App() {
     const savedLanguage = window.localStorage.getItem('pharmacyFinder.language');
     return savedLanguage === 'fi' || savedLanguage === 'en' ? savedLanguage : getSystemLanguage();
   });
-  const [userLocation, setUserLocation] = useState<Coordinates | null>(null);
-  const [pharmacies, setPharmacies] = useState<Pharmacy[]>([]);
+  const [savedSearch, setSavedSearch] = useState<SessionPharmacySearch | null>(
+    () => loadSessionPharmacySearch(),
+  );
+  const [userLocation, setUserLocation] = useState<Coordinates | null>(() => savedSearch?.origin ?? null);
+  const [pharmacies, setPharmacies] = useState<Pharmacy[]>(() => savedSearch?.pharmacies ?? []);
   const [filterMode, setFilterMode] = useState<PharmacyFilter>('all');
   const [currentTime, setCurrentTime] = useState(() => Date.now());
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -213,8 +227,10 @@ function App() {
   const menuRef = useRef<HTMLDivElement>(null);
   const copy = messages[language];
   const effectiveTheme = themeOverride ?? (systemPrefersDark ? 'dark' : 'light');
-  const visiblePharmacies = filterPharmacies(pharmacies, filterMode, userLocation);
-  const filterEmptyMessage = pharmacies.some((pharmacy) => typeof pharmacy.openNow !== 'boolean')
+  const visiblePharmacies = filterPharmacies(pharmacies, filterMode, userLocation, currentTime);
+  const filterEmptyMessage = pharmacies.some((pharmacy) => (
+    typeof getCurrentOpenStatus(pharmacy, currentTime) !== 'boolean'
+  ))
     ? copy.openingStatusUnavailable
     : filterMode === 'openNow' ? copy.noneOpen : copy.noneClosed;
 
@@ -305,6 +321,7 @@ function App() {
     setIsSearching(true);
     setErrorMessage(null);
     setFilterMode('all');
+    let searchToPersist: SessionPharmacySearch | null = null;
 
     try {
       const position = await new Promise<GeolocationPosition>((resolve, reject) => {
@@ -319,16 +336,43 @@ function App() {
       };
       setUserLocation(location);
 
+      if (
+        savedSearch?.origin &&
+        savedSearch.language === language &&
+        isSameSearchArea(savedSearch.origin, location)
+      ) {
+        setCurrentTime(Date.now());
+        setSelectedId(savedSearch.pharmacies[0]?.id ?? null);
+        if (savedSearch.pharmacies.length === 0) setErrorMessage(copy.noResults);
+        return;
+      }
+
       const results = await searchNearbyPharmacies(location, language);
+      searchToPersist = { pharmacies: results, origin: location, language };
+      setSavedSearch(searchToPersist);
       setPharmacies(results);
       setSelectedId(results[0]?.id ?? null);
       if (results.length === 0) setErrorMessage(copy.noResults);
     } catch (error) {
+      setSavedSearch(null);
       setPharmacies([]);
       setSelectedId(null);
       setErrorMessage(getErrorMessage(error, copy));
     } finally {
       setIsSearching(false);
+    }
+
+    try {
+      if (searchToPersist) {
+        saveSessionPharmacySearch(searchToPersist);
+      } else {
+        clearSessionPharmacySearch();
+      }
+    } catch (error) {
+      console.error('Unable to update saved Pharmacy Finder session results.', error);
+      setErrorMessage((current) => (
+        current ? `${current} ${copy.sessionResultsNotSaved}` : copy.sessionResultsNotSaved
+      ));
     }
   };
 
@@ -338,7 +382,7 @@ function App() {
 
   const handleFilterChange = (nextFilter: PharmacyFilter) => {
     setFilterMode(nextFilter);
-    const matches = filterPharmacies(pharmacies, nextFilter, userLocation);
+    const matches = filterPharmacies(pharmacies, nextFilter, userLocation, currentTime);
     setSelectedId(matches[0]?.id ?? null);
   };
 
@@ -397,6 +441,14 @@ function App() {
                   alt=""
                 />
               </button>
+              {!isAppSwitcherOpen && (
+                <div className="app-switcher-hint" aria-hidden="true">
+                  <svg viewBox="0 0 16 16">
+                    <path d="m4 10 4-4 4 4" />
+                  </svg>
+                  <span>{copy.appSwitcherHint}</span>
+                </div>
+              )}
               {isAppSwitcherOpen && (
                 <nav
                   className="app-switcher-menu"

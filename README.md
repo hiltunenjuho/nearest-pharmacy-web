@@ -4,6 +4,14 @@ React, TypeScript, and Vite web client for the Pharmacy Finder portfolio project
 
 [Open the live GitHub Pages demo](https://hiltunenjuho.github.io/nearest-pharmacy-web/).
 
+## Screenshots
+
+<p align="center">
+  <img src="./docs/screenshots/pharmacy-finder-dark.png" alt="Pharmacy Finder desktop web app in dark theme" width="49%">
+  <img src="./docs/screenshots/pharmacy-finder-light.png" alt="Pharmacy Finder desktop web app in light theme" width="49%">
+</p>
+<p align="center"><em>The current desktop interface, captured in both appearance modes.</em></p>
+
 ## Features
 
 - Uses browser geolocation to search around the user's current position anywhere in the world

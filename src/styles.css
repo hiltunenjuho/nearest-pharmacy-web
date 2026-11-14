@@ -214,6 +214,69 @@ button {
   }
 }
 
+.app-switcher-hint {
+  position: absolute;
+  top: calc(100% + 5px);
+  left: 0;
+  z-index: 8;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  max-width: calc(100vw - 32px);
+  padding: 5px 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text-primary);
+  background: var(--panel-alt);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
+  font-size: 0.69rem;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  animation: app-switcher-hint-cycle 36s ease-in-out infinite;
+}
+
+.app-switcher-hint svg {
+  display: block;
+  width: 14px;
+  height: 14px;
+  flex: 0 0 14px;
+  fill: none;
+  stroke: var(--pharmacy-green);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
+@keyframes app-switcher-hint-cycle {
+  0%, 15%, 100% {
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-4px);
+  }
+  1%, 13% {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+  }
+}
+
+.app-switcher-toggle[aria-expanded="true"] + .app-switcher-hint {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-switcher-hint {
+    animation: none;
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+  }
+}
+
 .app-switcher-item {
   display: flex;
   min-height: 66px;
@@ -1059,6 +1122,15 @@ summary:focus-visible {
   .primary-button {
     width: 100%;
   }
+
+  .app-switcher-hint {
+    top: auto;
+    bottom: calc(100% + 4px);
+  }
+
+  .app-switcher-hint svg {
+    transform: rotate(180deg);
+  }
 }
 
 @media (max-width: 600px) {
@@ -1100,6 +1172,10 @@ summary:focus-visible {
   .app-switcher-toggle {
     width: 58px;
     height: 58px;
+  }
+
+  .app-switcher-hint {
+    bottom: calc(100% - 2px);
   }
 
   .cta-row {
