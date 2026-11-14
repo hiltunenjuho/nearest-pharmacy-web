@@ -35,7 +35,7 @@ React, TypeScript, and Vite web client for the Pharmacy Finder portfolio project
 
 Google Maps Demo Key searches are available without a billing account, but the key has daily limits and is intended for prototypes and portfolio demos. Search availability is not guaranteed. Pharmacy details may be missing or out of date; confirm opening hours before travelling.
 
-The browser sends the coordinates needed to perform a search to the Cloudflare Worker, which forwards them to Google Places. Neither app nor Worker stores coordinates or results. The Google Maps Demo Key must remain a Cloudflare Worker secret; never put it in frontend configuration or source control. The Worker endpoint is public, CORS is not authentication, and rate limiting is not a production security boundary.
+The web app keeps the last successful search location and results in that browser tab's `sessionStorage` so they survive a refresh and can be reused; the session data is cleared when the tab closes. The iOS app keeps the current search location and results in memory only. The Worker does not persist coordinates or results and sends responses with caching disabled. The browser sends search coordinates to the Worker, which forwards them to Google Places. The Google Maps Demo Key must remain a Cloudflare Worker secret; never put it in frontend configuration or source control. The Worker endpoint is public, CORS is not authentication, and rate limiting is not a production security boundary.
 
 ## Local development
 

@@ -218,7 +218,6 @@ function App() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSearching, setIsSearching] = useState(false);
   const [isAppSwitcherOpen, setIsAppSwitcherOpen] = useState(false);
-  const [isComingSoonVisible, setIsComingSoonVisible] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isInfoOpen, setIsInfoOpen] = useState(false);
   const [infoPage, setInfoPage] = useState<InfoPage>('about');
@@ -304,7 +303,6 @@ function App() {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return;
       setIsAppSwitcherOpen(false);
-      setIsComingSoonVisible(false);
       appSwitcherButtonRef.current?.focus();
     };
 
@@ -391,7 +389,6 @@ function App() {
     setIsInfoOpen(true);
     setIsMenuOpen(false);
     setIsAppSwitcherOpen(false);
-    setIsComingSoonVisible(false);
   };
 
   const handleThemeToggle = () => {
@@ -413,7 +410,6 @@ function App() {
           tabIndex={-1}
           onClick={() => {
             setIsAppSwitcherOpen(false);
-            setIsComingSoonVisible(false);
             appSwitcherButtonRef.current?.focus();
           }}
         />
@@ -431,7 +427,6 @@ function App() {
                 aria-controls="app-switcher-menu"
                 onClick={() => {
                   setIsAppSwitcherOpen((isOpen) => !isOpen);
-                  setIsComingSoonVisible(false);
                   setIsMenuOpen(false);
                 }}
               >
@@ -482,10 +477,9 @@ function App() {
                       Pharmacy Finder
                     </span>
                   </a>
-                  <button
+                  <a
                     className="app-switcher-item"
-                    type="button"
-                    onClick={() => setIsComingSoonVisible(true)}
+                    href="https://hiltunenjuho.github.io/knowdium/"
                   >
                     <img
                       className="app-switcher-logo"
@@ -493,12 +487,7 @@ function App() {
                       alt=""
                     />
                     <span className="app-switcher-name app-switcher-name-knowdium">knowdium!</span>
-                  </button>
-                  {isComingSoonVisible && (
-                    <p className="app-switcher-notice" role="status">
-                      COMING SOON!
-                    </p>
-                  )}
+                  </a>
                 </nav>
               )}
             </div>
@@ -564,7 +553,6 @@ function App() {
               onClick={() => {
                 setIsMenuOpen((isOpen) => !isOpen);
                 setIsAppSwitcherOpen(false);
-                setIsComingSoonVisible(false);
               }}
             >
               <svg viewBox="0 0 24 24" aria-hidden="true">
