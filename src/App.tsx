@@ -78,7 +78,14 @@ const messages = {
     infoForNerds: 'Info for nerds',
     infoBack: 'Back to overview',
     infoTechnicalTitle: 'How it is built',
-    infoTechnical: 'The project includes a web app and an iOS app built with SwiftUI. The web app uses React, TypeScript, Vite, and CSS. The iOS app uses SwiftUI, Core Location, and URLSession. Both send searches through a Cloudflare Worker to Google Places API (New). The Google Maps Demo Key stays in a Cloudflare Secret; the Worker validates requests and rate-limits searches.',
+    infoTechClientsTitle: 'Web and iOS',
+    infoTechClients: 'The web app uses React, TypeScript, Vite and CSS, with browser geolocation for the search position. Its iOS companion uses SwiftUI for the interface, Core Location for positioning and URLSession for network requests.',
+    infoTechSearchTitle: 'Search and results',
+    infoTechSearch: 'Both clients send coordinates and language to a Cloudflare Worker, which queries Google Places API (New) for up to 10 pharmacies within 50 km, ranked by distance. The clients display available details, calculate distances and opening countdowns, and provide filtering, directions and phone links.',
+    infoTechPrivacyTitle: 'Privacy and limits',
+    infoTechPrivacy: 'The Google Maps Demo Key stays in a Cloudflare Worker secret, not in the clients. The Worker validates requests, applies rate limits and does not persist coordinates or results. Its endpoint is public; CORS and rate limiting are not authentication. The web app keeps the last successful search in tab session storage and reuses it within 1 km; iOS keeps results in memory only. Google’s demo key has a daily quota.',
+    infoTechDeployTitle: 'Deployment',
+    infoTechDeploy: 'GitHub Actions builds and publishes the web app to GitHub Pages. The API proxy runs on Cloudflare Workers; the iOS app is a separate SwiftUI project.',
     demoDailyLimit: 'The Google Maps Demo Key daily limit has been reached. Please try again tomorrow.',
     rateLimited: 'Too many searches in a short time. Please wait a moment and try again.',
     open24Hours: 'Open 24 hours',
@@ -152,7 +159,14 @@ const messages = {
     infoForNerds: 'Tietoa nörteille',
     infoBack: 'Takaisin yleiskatsaukseen',
     infoTechnicalTitle: 'Tekninen toteutus',
-    infoTechnical: 'Projektiin kuuluu web-sovellus sekä SwiftUI:lla rakennettu iOS-sovellus. Web-sovellus käyttää Reactia, TypeScriptiä, Viteä ja CSS:ää. iOS-sovellus käyttää SwiftUI:ta, Core Locationia ja URLSessionia. Molemmat välittävät haut Google Places API (New) -rajapintaan Cloudflare Worker -palvelun kautta. Google Maps Demo Key säilytetään Cloudflare Secretissä; Worker validoi pyynnöt ja rajoittaa hakunopeutta.',
+    infoTechClientsTitle: 'Web ja iOS',
+    infoTechClients: 'Web-sovellus käyttää Reactia, TypeScriptiä, Viteä ja CSS:ää sekä selaimen sijaintipalvelua hakusijainnin määrittämiseen. iOS-versio käyttää käyttöliittymään SwiftUI:ta, paikannukseen Core Locationia ja verkkopyyntöihin URLSessionia.',
+    infoTechSearchTitle: 'Haku ja tulokset',
+    infoTechSearch: 'Molemmat sovellukset lähettävät koordinaatit ja kielen Cloudflare Workerille, joka hakee Google Places API (New) -rajapinnasta enintään 10 apteekkia 50 km:n säteeltä etäisyyden mukaan järjestettynä. Sovellukset näyttävät saatavilla olevat tiedot, laskevat etäisyydet ja aukioloaikojen laskurit sekä tarjoavat suodatuksen, reittiohjeet ja puhelinlinkit.',
+    infoTechPrivacyTitle: 'Tietosuoja ja rajoitukset',
+    infoTechPrivacy: 'Google Maps Demo Key säilyy Cloudflare Workerin salaisuutena, ei sovelluksissa. Worker validoi pyynnöt, rajoittaa hakunopeutta eikä tallenna koordinaatteja tai tuloksia. Rajapinta on julkinen; CORS ja nopeusrajoitus eivät ole tunnistautumista. Web-sovellus säilyttää viimeisimmän onnistuneen haun välilehden istuntomuistissa ja käyttää sitä uudelleen 1 km:n säteellä; iOS säilyttää tulokset vain muistissa. Googlen demoavaimella on päiväkiintiö.',
+    infoTechDeployTitle: 'Julkaisu',
+    infoTechDeploy: 'GitHub Actions rakentaa ja julkaisee web-sovelluksen GitHub Pagesiin. API-välityspalvelu toimii Cloudflare Workersissa; iOS-sovellus on erillinen SwiftUI-projekti.',
     demoDailyLimit: 'Google Maps Demo Keyn päiväkohtainen kiintiö on täynnä. Yritä uudelleen huomenna.',
     rateLimited: 'Hakuja on tehty liian nopeasti. Odota hetki ja yritä uudelleen.',
     meters: 'm päässä',
@@ -778,7 +792,14 @@ function App() {
                   ← {copy.infoBack}
                 </button>
                 <h2 id="info-title">{copy.infoTechnicalTitle}</h2>
-                <p>{copy.infoTechnical}</p>
+                <h3>{copy.infoTechClientsTitle}</h3>
+                <p>{copy.infoTechClients}</p>
+                <h3>{copy.infoTechSearchTitle}</h3>
+                <p>{copy.infoTechSearch}</p>
+                <h3>{copy.infoTechPrivacyTitle}</h3>
+                <p>{copy.infoTechPrivacy}</p>
+                <h3>{copy.infoTechDeployTitle}</h3>
+                <p>{copy.infoTechDeploy}</p>
               </>
             )}
             <div className="info-dialog-actions">
