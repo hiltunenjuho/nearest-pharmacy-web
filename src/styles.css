@@ -338,9 +338,14 @@ button {
   font-weight: 600;
 }
 
-.app-switcher-name-knowdium {
-  font-family: "Honk", system-ui, sans-serif;
-  font-size: 1.55rem;
+.app-switcher-wordmark {
+  display: block;
+  flex: 0 0 112px;
+  width: 112px;
+  max-width: 100%;
+  margin-left: -6px;
+  height: auto;
+  object-fit: contain;
 }
 
 .eyebrow {

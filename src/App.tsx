@@ -500,7 +500,11 @@ function App() {
                       src={`${import.meta.env.BASE_URL}knowdium-logo.svg`}
                       alt=""
                     />
-                    <span className="app-switcher-name app-switcher-name-knowdium">knowdium!</span>
+                    <img
+                      className="app-switcher-name app-switcher-wordmark"
+                      src={`${import.meta.env.BASE_URL}Honk-styled-text-transparent-1x-319x81px.png`}
+                      alt="knowdium!"
+                    />
                   </a>
                 </nav>
               )}
